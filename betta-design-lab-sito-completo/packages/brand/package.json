@@ -1,7 +1,0 @@
-{
-  "name": "@bdl/brand",
-  "private": true,
-  "version": "0.1.0",
-  "type": "module",
-  "exports": { ".": "./src/index.ts" }
-}
