@@ -343,5 +343,108 @@ for (const mode of ['inlay', 'relief', 'engrave'] as const) {
   solids.forEach((m) => m.delete());
 }
 
+// Scatola scorrevole: mesh, vani, scorrimento e orientamento degli export.
+for (const dims of [[40,35,18], [110,75,40], [220,180,130]])
+for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribbed of [false,true]) for (const wall of [2,4]) {
+  runs++;
+  const { buildBox } = await import('../apps/box/src/geometry.ts');
+  const { DEFAULTS, sanitize } = await import('../apps/box/src/params.ts');
+  const { printParts } = await import('../apps/box/src/parts.ts');
+  const p = sanitize({ ...DEFAULTS, width:dims[0], depth:dims[1], height:dims[2], radius, clearance, ribbed, wall, floor:4, columns:3, rows:3 });
+  const result = buildBox(M,p);
+  const solids = result.parts.map((part) => { const mesh = new M.Mesh({ numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices }); mesh.merge(); return new M.Manifold(mesh); });
+  solids.forEach((m) => { if (m.status() !== 'NoError' || m.volume() <= 0) fail('box: mesh invalida'); const c=m.decompose(); if(c.length!==1)fail('box: pezzo separato');c.forEach((m)=>m.delete()); });
+  for (const shift of [0,1,5,p.width/4,p.width/2,p.width]) { const lid=solids[1].translate([shift,0,0]);const overlap=lid.intersect(solids[0]);if(overlap.volume()>0.001)fail(`box: collisione coperchio ${dims}/${radius}/${clearance}/${shift}: ${overlap.volume()}`);overlap.delete();lid.delete(); }
+  const printed = printParts(result.parts);
+  for (const part of printed) if(Math.abs(bounds([part]).min[2])>0.001)fail('box: export sospeso');
+  const overlapX = Math.min(bounds([printed[0]]).max[0],bounds([printed[1]]).max[0])-Math.max(bounds([printed[0]]).min[0],bounds([printed[1]]).min[0]);
+  const overlapY = Math.min(bounds([printed[0]]).max[1],bounds([printed[1]]).max[1])-Math.max(bounds([printed[0]]).min[1],bounds([printed[1]]).min[1]);
+  if(overlapX>0 && overlapY>0)fail('box: export sovrapposto');
+  if(to3MF(printed).length<1000 || toSTL([printed[0]]).length<1000)fail('box: export vuoto');
+  solids.forEach((m)=>m.delete());
+}
+
+// Decorazioni su tutte le superfici e distribuzione automatica sui piatti.
+{
+  const { buildBox } = await import('../apps/box/src/geometry.ts');
+  const { DEFAULTS } = await import('../apps/box/src/params.ts');
+  const { packPlates } = await import('../apps/box/src/parts.ts');
+  const art = {name:'Due isole', shapes:[[[[-0.4,-0.3],[-0.1,-0.3],[-0.1,0.3],[-0.4,0.3]]],[[[0.1,-0.3],[0.4,-0.3],[0.4,0.3],[0.1,0.3]]]]} as import('../apps/coaster/src/svg.ts').SvgArtwork;
+  for(const face of ['lid','front','back','left','right'] as const) for(const mode of ['inlay','relief','engrave'] as const) for(const ribbed of [false,true]) {
+    runs++;
+    const result=buildBox(M,{...DEFAULTS,ribbed,dividers:false,columns:4,rows:4},[{id:1,face,mode,size:15,u:0,v:0,angle:25,depth:0.8,color:'#ffbb00',artwork:art}]);
+    if(result.parts.length!==(mode==='engrave'?2:4))fail(`box decor ${face}/${mode}: conteggio pezzi`);
+    const solids=result.parts.map(part=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);});
+    solids.forEach(m=>{if(m.status()!=='NoError'||m.volume()<=0)fail('box decor: mesh invalida');});
+    for(let i=2;i<solids.length;i++){const hit=solids[i].intersect(solids[face==='lid'?1:0]);if(hit.volume()>0.001)fail('box decor: intarsio sovrapposto al supporto');hit.delete();}
+    for(const size of [100,160,256]) {
+      const packed=packPlates(result.parts,size,size);
+      const count=packed.plates.reduce((n,parts)=>n+parts.length,0)+packed.oversized.length;
+      if(count!==result.parts.length)fail('box piatti: pezzi persi');
+      for(const plate of packed.plates){
+        const bb=plate.map(part=>bounds([part]));
+        bb.forEach(b=>{if(b.min[0]<-size/2+4.99||b.min[1]<-size/2+4.99||b.max[0]>size/2-4.99||b.max[1]>size/2-4.99||Math.abs(b.min[2])>0.001)fail('box piatti: fuori dal piatto');});
+        for(let i=0;i<bb.length;i++)for(let j=i+1;j<bb.length;j++)if(Math.min(bb[i].max[0],bb[j].max[0])-Math.max(bb[i].min[0],bb[j].min[0])>0.001&&Math.min(bb[i].max[1],bb[j].max[1])-Math.max(bb[i].min[1],bb[j].min[1])>0.001)fail('box piatti: pezzi sovrapposti');
+        if(to3MF(plate,{plateCenter:[size/2,size/2]}).length<1000)fail('box piatti: export vuoto');
+      }
+      if(size===256&&packed.plates.length!==1)fail('box piatti: modello piccolo non compatto');
+      if(size===160&&packed.plates.length<2)fail('box piatti: overflow non distribuito');
+    }
+    solids.forEach(m=>m.delete());
+  }
+}
+
+// Posizioni manuali: geometria rigida, permanenza dopo modifiche e avvisi.
+{
+  const {buildBox}=await import('../apps/box/src/geometry.ts');
+  const {DEFAULTS}=await import('../apps/box/src/params.ts');
+  const {arrange,placePart,currentPlacement,validatePlacements,center}=await import('../apps/box/src/placement.ts');
+  const {packPlates}=await import('../apps/box/src/parts.ts');
+  const parts=buildBox(M,DEFAULTS).parts;
+  for(const angle of [-180,-45,0,90,135]) {
+    runs++;
+    const positions={body:{x:25,y:-20,angle,plate:1},lid:{x:-30,y:30,angle:0,plate:0}};
+    const layout=arrange(parts,350,350,positions);
+    const moved=layout.plates[1].find(p=>p.id==='body')!, c=center(moved);
+    if(Math.abs(c.x-25)>0.001||Math.abs(c.y+20)>0.001||Math.abs(bounds([moved]).min[2])>0.001)fail('manual: posizione o appoggio errati');
+    const inferred=currentPlacement(moved,parts[0],1), reconstructed=placePart(parts[0],inferred);
+    if(reconstructed.mesh.positions.some((v,i)=>Math.abs(v-moved.mesh.positions[i])>0.002))fail('manual: rotazione persa');
+    const after=arrange(buildBox(M,{...DEFAULTS,width:120,height:55}).parts,350,350,positions);
+    const retained=center(after.plates[1].find(p=>p.id==='body')!);
+    if(Math.abs(retained.x-25)>0.001||Math.abs(retained.y+20)>0.001)fail('manual: posizione persa modificando misure');
+    if(JSON.stringify(validatePlacements(JSON.parse(JSON.stringify(positions))))!==JSON.stringify(positions))fail('manual: salvataggio posizioni');
+    const mesh=new M.Mesh({numProp:3,vertProperties:moved.mesh.positions,triVerts:moved.mesh.indices});mesh.merge();const solid=new M.Manifold(mesh);if(solid.status()!=='NoError'||solid.volume()<=0)fail('manual: trasformazione invalida');solid.delete();
+    const xml=strFromU8(unzipSync(to3MF(layout.plates[1]))['3D/3dmodel.model']);if(!xml.includes('Corpo scatola'))fail('manual: export perde il pezzo');
+  }
+  runs++;
+  if(!arrange(parts,256,256,{body:{x:200,y:0,angle:0,plate:0}}).warnings.length)fail('manual: manca avviso fuori piatto');
+  if(!arrange(parts,256,256,{body:{x:0,y:0,angle:0,plate:0},lid:{x:0,y:0,angle:0,plate:0}}).warnings.some(w=>w.includes('sovrapposti')))fail('manual: manca avviso sovrapposizione');
+  const auto=packPlates(parts,256,256);
+  for(const plate of auto.plates)for(const p of plate){const restored=placePart(parts.find(s=>s.id===p.id)!,currentPlacement(p,parts.find(s=>s.id===p.id)!,0));if(restored.mesh.positions.some((v,i)=>Math.abs(v-p.mesh.positions[i])>0.002))fail('manual: primo spostamento altera orientamento automatico');}
+  for(const bad of [{body:{x:NaN,y:0,angle:0,plate:0}},{body:{x:0,y:0,angle:0,plate:100}},{invalid:{x:0,y:0,angle:0,plate:0}}]){try{validatePlacements(bad);fail('manual: progetto invalido accettato');}catch{}}
+}
+
+// Testo fuori dal centro: cinque superfici, posizioni e conservazione delle coordinate.
+{
+  const {positionOnFace}=await import('../apps/box/src/decoration.ts');
+  const {buildBox}=await import('../apps/box/src/geometry.ts');
+  const {DEFAULTS}=await import('../apps/box/src/params.ts');
+  const artwork={name:'Testo',shapes:[[[[-0.5,-0.2],[0.5,-0.2],[0.5,0.2],[-0.5,0.2]]]]} as import('../apps/coaster/src/svg.ts').SvgArtwork;
+  for(const face of ['lid','front','back','left','right'] as const)for(const position of ['left','right','top','bottom','center'] as const){
+    runs++;
+    const decoration={id:1,face,mode:'relief' as const,size:20,u:0,v:0,angle:25,depth:0.6,color:'#ddbb00',artwork};
+    const uv=positionOnFace(decoration,DEFAULTS,position);
+    if((position==='left'&&uv.u>=0)||(position==='right'&&uv.u<=0)||(position==='top'&&uv.v<=0)||(position==='bottom'&&uv.v>=0))fail('box testo: posizione rimasta centrale');
+    const result=buildBox(M,DEFAULTS,[{...decoration,...uv}]);
+    if(result.parts.length!==3||result.warnings.length)fail('box testo: preset taglia il disegno');
+    const b=bounds([result.parts[2]]),x=(b.min[0]+b.max[0])/2,y=(b.min[1]+b.max[1])/2,z=(b.min[2]+b.max[2])/2;
+    const actualU=face==='lid'||face==='front'?x:face==='back'?-x:face==='left'?-y:y;
+    const actualV=face==='lid'?y:z-DEFAULTS.height/2;
+    if(Math.abs(actualU-uv.u)>0.001||Math.abs(actualV-uv.v)>0.001)fail('box testo: coordinate non applicate alla superficie');
+    const changed=buildBox(M,DEFAULTS,[{...decoration,...uv,artwork:{...artwork,name:'Nuovo testo'}}]);
+    if(changed.parts[2].mesh.positions.some((v,i)=>Math.abs(v-result.parts[2].mesh.positions[i])>0.001))fail('box testo: nuova scritta ricentrata');
+  }
+}
+
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);

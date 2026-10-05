@@ -194,3 +194,6 @@ button, input, select { font: inherit; color: inherit; }
 .bdl-icon-library .bdl-btn { flex-direction: column; white-space: normal; min-width: 0; padding: 10px 4px; font-size: 11px; }
 .bdl-icon-library .bdl-btn svg { width: 32px; height: 32px; }
 .bdl-icon-library .bdl-btn[aria-pressed='true'] { background: var(--bdl-accent-soft); border-color: var(--bdl-accent); }
+
+.bdl-control-stack { display: flex; flex-direction: column; gap: 12px; }
+.bdl-control-stack[hidden] { display: none; }

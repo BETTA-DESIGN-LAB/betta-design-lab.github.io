@@ -10,11 +10,14 @@ import type { Part } from '@bdl/geometry';
 export interface ViewerOptions {
   /** Lato del piatto in mm (default 256, Bambu X1/P1/A1). */
   plateSize?: number;
+  onMovePart?: (id: string, dx: number, dy: number) => void;
   onSelectPart?: (id: string | null) => void;
 }
 
 export interface Viewer {
   setParts(parts: readonly Part[], opts?: { refit?: boolean }): void;
+  setMoveEnabled(enabled: boolean): void;
+  setPlateSize(width: number, depth: number): void;
   selectPart(id: string | null): void;
   fit(): void;
   setView(view: 'iso' | 'top' | 'front'): void;
@@ -94,20 +97,48 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     }
   };
   let pointerStart: [number, number] | null = null;
-  const onDown = (event: PointerEvent) => { if (event.button === 0) pointerStart = [event.clientX, event.clientY]; };
-  const onUp = (event: PointerEvent) => {
-    const start = pointerStart; pointerStart = null;
-    if (!opts.onSelectPart || !start || Math.hypot(event.clientX - start[0], event.clientY - start[1]) > 5) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    const ray = new THREE.Raycaster();
-    ray.setFromCamera(new THREE.Vector2(2 * (event.clientX - rect.left) / rect.width - 1, 1 - 2 * (event.clientY - rect.top) / rect.height), camera);
-    const hit = ray.intersectObjects(model.children, false)[0];
-    selected = hit ? hit.object.name : null;
-    highlight();
-    opts.onSelectPart(selected);
+  let moveEnabled=false;
+  let dragging: {mesh:THREE.Object3D; start:THREE.Vector3; origin:THREE.Vector3; pointer:number} | null=null;
+  const rayAt = (event:PointerEvent) => {
+    const rect=renderer.domElement.getBoundingClientRect(), ray=new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(2*(event.clientX-rect.left)/rect.width-1,1-2*(event.clientY-rect.top)/rect.height),camera);
+    return ray;
   };
-  renderer.domElement.addEventListener('pointerdown', onDown);
-  renderer.domElement.addEventListener('pointerup', onUp);
+  const floorPoint = (event:PointerEvent) => rayAt(event).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),0),new THREE.Vector3());
+  const onDown = (event:PointerEvent) => {
+    if(event.button!==0)return;
+    pointerStart=[event.clientX,event.clientY];
+    if(!moveEnabled || !opts.onMovePart)return;
+    const hit=rayAt(event).intersectObjects(model.children,false)[0], start=floorPoint(event);
+    if(!hit || !start)return;
+    event.stopImmediatePropagation();event.preventDefault();controls.enabled=false;
+    dragging={mesh:hit.object,start,origin:hit.object.position.clone(),pointer:event.pointerId};
+    renderer.domElement.setPointerCapture(event.pointerId);
+    selected=hit.object.name;highlight();opts.onSelectPart?.(selected);
+  };
+  const onMove = (event:PointerEvent) => {
+    if(!dragging || dragging.pointer!==event.pointerId)return;
+    const at=floorPoint(event);if(!at)return;
+    event.stopImmediatePropagation();
+    dragging.mesh.position.copy(dragging.origin).add(at.sub(dragging.start));
+  };
+  const onUp = (event:PointerEvent) => {
+    const start=pointerStart;pointerStart=null;
+    if(dragging){
+      event.stopImmediatePropagation();const d=dragging;dragging=null;controls.enabled=true;
+      if(renderer.domElement.hasPointerCapture(event.pointerId))renderer.domElement.releasePointerCapture(event.pointerId);
+      const dx=d.mesh.position.x-d.origin.x,dy=d.mesh.position.y-d.origin.y;
+      if(Math.hypot(dx,dy)>0.01)opts.onMovePart?.(d.mesh.name,dx,dy);
+      return;
+    }
+    if(!opts.onSelectPart || !start || Math.hypot(event.clientX-start[0],event.clientY-start[1])>5)return;
+    const hit=rayAt(event).intersectObjects(model.children,false)[0];selected=hit?hit.object.name:null;highlight();opts.onSelectPart(selected);
+  };
+  const onCancel = () => {if(dragging)dragging.mesh.position.copy(dragging.origin);dragging=null;pointerStart=null;controls.enabled=true;};
+  renderer.domElement.addEventListener('pointerdown',onDown,true);
+  renderer.domElement.addEventListener('pointermove',onMove,true);
+  renderer.domElement.addEventListener('pointerup',onUp,true);
+  renderer.domElement.addEventListener('pointercancel',onCancel,true);
 
   const resize = () => {
     const w = host.clientWidth, h = host.clientHeight;
@@ -130,6 +161,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
 
   const box = () => {
     const b = new THREE.Box3().setFromObject(model);
+    if (moveEnabled) b.union(new THREE.Box3().setFromObject(plateGroup));
     if (b.isEmpty()) b.set(new THREE.Vector3(-40, -40, 0), new THREE.Vector3(40, 40, 10));
     return b;
   };
@@ -182,6 +214,11 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
       highlight();
       if (first || o.refit) { place(views.iso.clone()); first = false; }
     },
+    setMoveEnabled(enabled) { moveEnabled=enabled; renderer.domElement.style.cursor=enabled?'grab':''; },
+    setPlateSize(width, depth) {
+      if (!Number.isFinite(width) || !Number.isFinite(depth) || width <= 0 || depth <= 0) return;
+      plateGroup.scale.set(width / plate, depth / plate, 1);
+    },
     selectPart(id) { selected = id; highlight(); },
     fit() { place(camera.position.clone().sub(controls.target)); },
     setView(v) { place(views[v].clone()); },
@@ -191,8 +228,10 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
       ro.disconnect();
       themeObs.disconnect();
       mq.removeEventListener('change', applyTheme);
-      renderer.domElement.removeEventListener('pointerdown', onDown);
-      renderer.domElement.removeEventListener('pointerup', onUp);
+      renderer.domElement.removeEventListener('pointerdown', onDown,true);
+      renderer.domElement.removeEventListener('pointerup', onUp,true);
+      renderer.domElement.removeEventListener('pointermove',onMove,true);
+      renderer.domElement.removeEventListener('pointercancel',onCancel,true);
       controls.dispose();
       renderer.dispose();
       renderer.domElement.remove();
