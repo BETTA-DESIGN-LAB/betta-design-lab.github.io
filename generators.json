@@ -30,11 +30,11 @@
       "blurb": "Magneti da frigo con alloggiamento calamita."
     },
     {
-      "id": "foldbox",
-      "name": "Scatole pieghevoli",
-      "status": "planned",
-      "category": "Packaging",
-      "blurb": "Scatole stampate piatte e piegate a mano."
+      "id": "box",
+      "name": "Scatole e organizer",
+      "status": "beta",
+      "category": "Casa",
+      "blurb": "Scatole con coperchio scorrevole, senza ferramenta, misure personalizzabili e divisori interni."
     },
     {
       "id": "vase",
