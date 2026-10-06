@@ -13,7 +13,7 @@ const ART: Record<string, string> = {
   keychain: a('<circle cx="18" cy="18" r="8"/><rect x="22" y="24" width="32" height="16" rx="5" transform="rotate(35 38 32)"/><path d="M33 35l8 5"/>'),
   keycap: a('<path d="M12 22l8-8h24l8 8v22l-6 6H18l-6-6z"/><path d="M20 14l4 8h16l4-8M24 22l-4 22M40 22l4 22"/><path d="M28 32h8"/>'),
   magnet: a('<path d="M14 14h12v20a6 6 0 0 0 12 0V14h12v20a18 18 0 0 1-36 0z"/><path d="M14 22h12M38 22h12"/>'),
-  foldbox: a('<path d="M10 22l22-10 22 10-22 10z"/><path d="M10 22v20l22 10 22-10V22M32 32v20"/>'),
+  box: a('<path d="M9 27l23-10 23 10-23 10zM9 27v19l23 10 23-10V27M32 37v19"/><path d="M15 30l17-7 17 7M17 38v10M24 41v10M40 41v10M47 38v10"/><path d="M12 16l23-10 20 9-23 10zM12 16v4l20 9 23-10v-4M28 21l7-3"/>'),
   vase: a('<path d="M24 10h16M26 10c0 8-10 12-10 26 0 10 6 18 16 18s16-8 16-18c0-14-10-18-10-26"/><path d="M20 30c8 3 16 3 24 0"/>'),
   tray: a('<rect x="8" y="22" width="48" height="22" rx="8"/><path d="M14 22v-2a4 4 0 0 1 4-4h28a4 4 0 0 1 4 4v2M28 22v22"/>'),
   kitchen: a('<path d="M20 8v18a6 6 0 0 1-6 6v24M14 8v12M26 8v12"/><path d="M44 8c-6 4-6 16 0 22v26"/>'),
