@@ -446,5 +446,52 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
   }
 }
 
+// Modelli e accoppiamenti nuovi: solidi, collisioni, letti e compatibilità dei piedi.
+{
+  const {buildBox}=await import('../apps/box/src/geometry.ts');
+  const {DEFAULTS,sanitize}=await import('../apps/box/src/params.ts');
+  const {gridSegments}=await import('../apps/box/src/gridfinity.ts');
+  const {printable,packPlates}=await import('../apps/box/src/parts.ts');
+  const solid=(part:import('@bdl/geometry').Part)=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+  for(const model of ['sliding','stackable','drawer'] as const)for(const radius of [0,6])for(const gridfinity of [false,true])for(const stackLid of [false,true]) {
+    runs++;const p=sanitize({...DEFAULTS,model,radius,gridfinity,stackLid,gridColumns:2,gridRows:2});
+    const result=buildBox(M,p);const solids=result.parts.map(solid);
+    for(const m of solids){const components=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||components.length!==1)fail(`box ${model}: solido o connessione invalida`);components.forEach(c=>c.delete());}
+    for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>0.02)fail(`box ${model}/${radius}/${gridfinity}: collisione ${result.parts[i].id}/${result.parts[j].id} ${hit.volume()}`);hit.delete();}
+    for(const part of result.parts)if(Math.abs(bounds([printable(part)]).min[2])>0.001)fail('box nuovo: pezzo sospeso sul piatto');
+    const packed=packPlates(result.parts,p.plateWidth,p.plateDepth);if(packed.oversized.length)fail('box nuovo: modello piccolo fuori piatto');
+    if(to3MF(packed.plates[0]).length<1000)fail('box nuovo: export vuoto');
+    solids.forEach(m=>m.delete());
+  }
+  for(const model of ['stackable','drawer'] as const)for(const face of ['lid','front','back','left','right'] as const)for(const mode of ['relief','inlay','engrave'] as const){
+    runs++;const result=buildBox(M,{...DEFAULTS,model,stackLid:true},[{id:1,face,mode,size:8,u:15,v:-5,angle:0,depth:0.4,color:'#d4a429',artwork:{name:'Quadro',shapes:[[[[-0.5,-0.5],[0.5,-0.5],[0.5,0.5],[-0.5,0.5]]]]}}]);
+    const solids=result.parts.map(solid);for(const m of solids){if(m.status()!=='NoError'||m.volume()<=0)fail('box nuovi: decorazione invalida');m.delete();}
+  }
+  runs++;const p=sanitize({...DEFAULTS,model:'stackable',ribbed:false,radius:0});const a=buildBox(M,p);const lower=solid(a.parts[0]),upper=lower.translate([0,0,p.height]);const intersection=lower.intersect(upper);if(intersection.volume()>0.001)fail('box impilabile: collisione tra due scatole');intersection.delete();upper.delete();lower.delete();
+  // Due scatole Gridfinity impilate: i piedi entrano nel bordo superiore senza collisioni.
+  for(const wall of [2,2.4,4])for(const radius of [0,3.75]) {
+    runs++;const p=sanitize({...DEFAULTS,gridfinity:true,gridOutput:'box',model:'stackable',wall,radius,gridColumns:2,gridRows:2});
+    const result=buildBox(M,p),lower=solid(result.parts[0]);
+    const socketWidth=41.5-2*Math.min(wall,2.4)+1.6;
+    const seat=socketWidth>=37.2?2.6+(socketWidth-37.2)/2:(socketWidth-35.6)/2;
+    // Mantiene un piccolo gioco verticale rispetto al contatto teorico sugli smussi.
+    const upper=lower.translate([0,0,p.height+4.75-seat+0.05]);const hit=lower.intersect(upper);
+    if(hit.volume()>0.02)fail(`grid impilabile: collisione ${wall}/${radius}: ${hit.volume()}`);
+    hit.delete();upper.delete();lower.delete();
+  }
+  for(const model of ['sliding','stackable','drawer'] as const)for(const height of [18,130])for(const wall of [2,4]) {
+    runs++;const p=sanitize({...DEFAULTS,model,height,wall,floor:4,width:40,depth:35,radius:0,columns:6,rows:6,stackLid:true});
+    for(const part of buildBox(M,p).parts){const m=solid(part),c=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||c.length!==1)fail(`box ${model}: misure estreme`);c.forEach(x=>x.delete());m.delete();}
+  }
+  for(const plateSize of [100,180,256]) {
+    runs++;const p=sanitize({...DEFAULTS,gridfinity:true,gridOutput:'grid',gridColumns:8,gridRows:6,plateWidth:plateSize,plateDepth:plateSize});
+    const segments=gridSegments(p),result=buildBox(M,p);if(segments.reduce((n,g)=>n+g.columns*g.rows,0)!==48)fail('grid: celle perse');
+    const packed=packPlates(result.parts,plateSize,plateSize);if(packed.oversized.length||packed.plates.flat().length!==result.parts.length)fail('grid: segmenti oltre piatto');
+    const solids=result.parts.map(solid);
+    for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>0.01)fail('grid: code di rondine in collisione');hit.delete();}
+    for(const m of solids){const c=m.decompose();if(m.status()!=='NoError'||c.length!==1)fail('grid: sezioni scollegate');c.forEach(x=>x.delete());m.delete();}
+  }
+}
+
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);
