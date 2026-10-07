@@ -1,15 +1,16 @@
 import { el, section, slider, segmented, button, toast } from '@bdl/ui-kit';
 import { importArtwork, textArtwork } from '../../keycap/src/artwork.ts';
 import { KEY_ICONS, keyIconSvg } from '../../keycap/src/icons.ts';
+import type { Params } from './params.ts';
 import { FACES, positionOnFace, type Decoration, type Face } from './decoration.ts';
-export function decorationEditor(get: () => Decoration[], change: (items: Decoration[]) => void, dimensions: () => Parameters<typeof positionOnFace>[1]) {
+export function decorationEditor(get: () => Decoration[], change: (items: Decoration[]) => void, dimensions: () => Params) {
   let active=0, generation=0;
   const list=el('select', {class:'bdl-select','aria-label':'Decorazione selezionata'});
   const fields=el('div',{class:'bdl-control-stack'}), text=el('input', {class:'bdl-input',type:'text', placeholder:'Testo (massimo 12 caratteri)', maxlength:'12', 'aria-label':'Testo della decorazione'});
   const upload=el('input',{class:'bdl-input',type:'file',accept:'.svg','aria-label':'Carica SVG'});
   const root=section('Decorazioni · SVG, testo e icone', list, button({label:'Aggiungi decorazione',onClick:()=>{
     if (get().length>=12) {toast('Massimo 12 decorazioni');return;}
-    change([...get(),{id:get().length+1,face:'lid',mode:'inlay',size:20,u:0,v:0,angle:0,depth:0.6,color:'#d4a429',artwork:textArtwork('A')}]);active=get().length-1;sync();
+    change([...get(),{id:get().length+1,face:dimensions().model==='stackable'&&!dimensions().stackLid?'front':'lid',mode:'inlay',size:20,u:0,v:0,angle:0,depth:0.6,color:'#d4a429',artwork:textArtwork('A')}]);active=get().length-1;sync();
   }}),fields);
   const updates: (()=>void)[]=[];
   function update(patch: Partial<Decoration>) { const items=get().map((d,i)=>i===active?{...d,...patch}:d);change(items);sync(); }
@@ -32,6 +33,6 @@ export function decorationEditor(get: () => Decoration[], change: (items: Decora
   fields.append(color,button({label:'Rimuovi decorazione',onClick:()=>{++generation;change(get().filter((_,i)=>i!==active));active=Math.max(0,active-1);sync();}}),el('p',{class:'bdl-hint'},'I disegni restano entro la zona piana del lato scelto. Intarsi e rilievi sono pezzi selezionabili separati; l’incisione scava la superficie. Gli intarsi hanno 0,1 mm di gioco per lato e vanno fissati con colla dopo la stampa.'));
   list.addEventListener('change',()=>{++generation;active=Number(list.value);sync();});
   upload.addEventListener('change',async()=>{const file=upload.files?.[0];if(!file)return;const token=++generation,index=active;try{const art=await importArtwork(file,180);if(token===generation && index===active)update({artwork:art});}catch(e){toast(e instanceof Error?e.message:String(e));}upload.value='';});
-  function sync() { const items=get();active=Math.min(active,Math.max(0,items.length-1));list.replaceChildren(...items.map((d,i)=>el('option',{value:String(i)},`${i+1} · ${FACES[d.face]} · ${d.artwork.name.slice(0,30)}`)));list.value=String(active);fields.hidden=!items.length;list.hidden=!items.length;const d=items[active];if(d){name.textContent=d.artwork.name;face.set(d.face);mode.set(d.mode);color.value=d.color;updates.forEach(f=>f());} }
+  function sync() { const p=dimensions(); for(const b of face.root.querySelectorAll('button'))if(b.textContent===FACES.lid)b.disabled=p.model==='stackable'&&!p.stackLid; const items=get();active=Math.min(active,Math.max(0,items.length-1));list.replaceChildren(...items.map((d,i)=>el('option',{value:String(i)},`${i+1} · ${FACES[d.face]} · ${d.artwork.name.slice(0,30)}`)));list.value=String(active);fields.hidden=!items.length;list.hidden=!items.length;const d=items[active];if(d){name.textContent=d.artwork.name;face.set(d.face);mode.set(d.mode);color.value=d.color;updates.forEach(f=>f());} }
   sync();return {root,sync,select:(id:number)=>{active=id;sync();}};
 }
