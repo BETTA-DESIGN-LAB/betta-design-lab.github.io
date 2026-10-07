@@ -3,56 +3,56 @@
 
 :root {
   --bdl-font: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --bdl-font-display: 'Fraunces', Georgia, serif;
-  --bdl-radius: 12px;
-  --bdl-radius-sm: 8px;
+  --bdl-font-display: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bdl-radius: 20px;
+  --bdl-radius-sm: 12px;
 
-  --bdl-bg: #f6f3ee;
+  --bdl-bg: #f7f7f7;
   --bdl-surface: #ffffff;
-  --bdl-surface-2: #efebe4;
-  --bdl-border: #e2ddd4;
-  --bdl-text: #1f1d1a;
-  --bdl-muted: #6f6a62;
-  --bdl-accent: #1f6f78;
-  --bdl-accent-ink: #ffffff;
-  --bdl-accent-soft: #d8ebec;
+  --bdl-surface-2: #f1f1f1;
+  --bdl-border: #e6e6e6;
+  --bdl-text: #111111;
+  --bdl-muted: #686868;
+  --bdl-accent: #ff4b16;
+  --bdl-accent-ink: #111111;
+  --bdl-accent-soft: #fff0ea;
   --bdl-warn: #a4520f;
-  --bdl-plate: #dcdad5;
-  --bdl-grid: #b5b1a9;
+  --bdl-plate: #eeeeee;
+  --bdl-grid: #dddddd;
   --bdl-shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 4px 16px rgb(0 0 0 / 0.06);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bdl-bg: #161514;
-    --bdl-surface: #201f1d;
-    --bdl-surface-2: #2a2826;
-    --bdl-border: #36332f;
-    --bdl-text: #f0ece5;
-    --bdl-muted: #a39d93;
-    --bdl-accent: #5fb5bd;
-    --bdl-accent-ink: #0e1a1b;
-    --bdl-accent-soft: #1f3a3c;
+    --bdl-bg: #111111;
+    --bdl-surface: #1b1b1b;
+    --bdl-surface-2: #252525;
+    --bdl-border: #343434;
+    --bdl-text: #fafafa;
+    --bdl-muted: #b3b3b3;
+    --bdl-accent: #ff693d;
+    --bdl-accent-ink: #111111;
+    --bdl-accent-soft: #3b2119;
     --bdl-warn: #e39a57;
-    --bdl-plate: #2f2d2a;
-    --bdl-grid: #4a4641;
+    --bdl-plate: #242424;
+    --bdl-grid: #303030;
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
-  --bdl-bg: #161514;
-  --bdl-surface: #201f1d;
-  --bdl-surface-2: #2a2826;
-  --bdl-border: #36332f;
-  --bdl-text: #f0ece5;
-  --bdl-muted: #a39d93;
-  --bdl-accent: #5fb5bd;
-  --bdl-accent-ink: #0e1a1b;
-  --bdl-accent-soft: #1f3a3c;
+  --bdl-bg: #111111;
+  --bdl-surface: #1b1b1b;
+  --bdl-surface-2: #252525;
+  --bdl-border: #343434;
+  --bdl-text: #fafafa;
+  --bdl-muted: #b3b3b3;
+  --bdl-accent: #ff693d;
+  --bdl-accent-ink: #111111;
+  --bdl-accent-soft: #3b2119;
   --bdl-warn: #e39a57;
-  --bdl-plate: #2f2d2a;
-  --bdl-grid: #4a4641;
+  --bdl-plate: #242424;
+  --bdl-grid: #303030;
   color-scheme: dark;
 }
 
@@ -197,3 +197,37 @@ button, input, select { font: inherit; color: inherit; }
 
 .bdl-control-stack { display: flex; flex-direction: column; gap: 12px; }
 .bdl-control-stack[hidden] { display: none; }
+
+/* Identità Betta Design Lab 3D: superfici morbide, arancione e spazio. */
+.bdl-topbar { height: 76px; padding: 0 28px; gap: 22px; border: 0; }
+.bdl-logo { gap: 12px; flex-shrink: 0; }
+.bdl-logo-symbol { display: block; position: relative; overflow: hidden; width: 42px; height: 48px; border-radius: 9px; background: #fff; }
+.bdl-logo-symbol img { position: absolute; width: 142px; height: 71px; max-width: none; left: -50px; top: -6px; }
+.bdl-wordmark { display: grid; position: relative; line-height: 1.05; font-size: 18px; font-weight: 850; letter-spacing: -.04em; padding-right: 24px; }
+.bdl-wordmark > span { font-size: 11px; letter-spacing: .045em; margin-top: 4px; }
+.bdl-wordmark small { position: absolute; right: 0; top: 2px; font-size: 13px; color: var(--bdl-accent); }
+.bdl-main { padding: 0 18px 18px; gap: 16px; grid-template-columns: 370px minmax(0,1fr); }
+.bdl-panel { border: 1px solid var(--bdl-border); border-radius: 24px; padding: 20px 22px 28px; scrollbar-width: thin; }
+.bdl-stage { border: 1px solid var(--bdl-border); border-radius: 24px; overflow: hidden; }
+.bdl-intro { padding-bottom: 12px; }
+.bdl-intro h1 { font-size: 28px; font-weight: 750; letter-spacing: -.04em; margin-top: 0; }
+.bdl-section { padding: 22px 0; }
+.bdl-section-title { font-size: 14px; text-transform: none; letter-spacing: -.01em; color: var(--bdl-text); margin-bottom: 16px; }
+.bdl-row { gap: 9px; margin: 14px 0; }
+.bdl-hint { line-height: 1.65; }
+.bdl-seg { padding: 5px; gap: 4px; border-radius: 14px; }
+.bdl-seg button { border-radius: 10px; padding: 9px 7px; }
+.bdl-seg button[aria-pressed='true'] { color: var(--bdl-text); box-shadow: 0 2px 8px rgb(0 0 0 / .06); }
+.bdl-btn { min-height: 40px; padding: 9px 15px; transition: background .18s, box-shadow .18s, transform .18s; }
+.bdl-btn svg { width: 18px; height: 18px; flex: none; }
+.bdl-btn[data-variant='primary'] { box-shadow: 0 4px 12px rgb(255 75 22 / .15); }
+.bdl-icon-btn { width: 40px; height: 40px; padding: 0; }
+.bdl-stage-tools { top: 18px; right: 18px; padding: 5px; border-radius: 16px; background: color-mix(in srgb,var(--bdl-surface) 88%,transparent); border: 1px solid var(--bdl-border); backdrop-filter: blur(12px); }
+.bdl-stage-tools .bdl-btn { border-color: transparent; background: transparent; }
+.bdl-stage-bottom { bottom: 18px; left: 18px; right: 18px; }
+.bdl-export { border-radius: 18px; padding: 6px; }
+a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--bdl-accent) 72%,var(--bdl-text)); }
+.bdl-panel-footer { padding: 14px; border-radius: 14px; background: var(--bdl-surface-2); line-height: 1.7; }
+@media (max-width: 1000px) and (min-width: 821px) { .bdl-main { grid-template-columns: 330px minmax(0,1fr); padding: 0 12px 12px; gap: 12px; } .bdl-panel { padding: 18px; } .bdl-stage-bottom { flex-wrap: wrap; } }
+@media (max-width: 820px) { .bdl-topbar { height: 70px; padding: 0 16px; gap: 12px; } .bdl-topbar-title { font-size: 12px; } .bdl-main { grid-template-columns: minmax(0,1fr); padding: 0 10px 18px; gap: 12px; } .bdl-stage { height: 52dvh; border-radius: 20px; top: 8px; } .bdl-panel { border-radius: 20px; padding: 20px; } .bdl-stage-bottom { left: 10px; right: 10px; bottom: 10px; gap: 8px; } .bdl-export .bdl-btn { font-size: 12px; padding: 8px 10px; } }
+@media (max-width: 430px) { .bdl-wordmark { font-size: 16px; } .bdl-topbar-title { display: none; } .bdl-stage-tools { top: 10px; right: 10px; } }
