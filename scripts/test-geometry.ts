@@ -458,7 +458,7 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
     const result=buildBox(M,p);const solids=result.parts.map(solid);
     for(const m of solids){const components=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||components.length!==1)fail(`box ${model}: solido o connessione invalida`);components.forEach(c=>c.delete());}
     for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>0.02)fail(`box ${model}/${radius}/${gridfinity}: collisione ${result.parts[i].id}/${result.parts[j].id} ${hit.volume()}`);hit.delete();}
-    for(const part of result.parts)if(Math.abs(bounds([printable(part)]).min[2])>0.001)fail('box nuovo: pezzo sospeso sul piatto');
+    for(const part of result.parts){const printed=printable(part);if(Math.abs(bounds([printed]).min[2])>0.001)fail('box nuovo: pezzo sospeso sul piatto');if(part.id==='case'){const back=bounds([part]).max[1];for(let i=0;i<part.mesh.positions.length;i+=3)if(Math.abs(part.mesh.positions[i+1]-back)<0.001&&Math.abs(printed.mesh.positions[i+2])>0.001)fail('cassetto: involucro non appoggiato sul retro');}}
     const packed=packPlates(result.parts,p.plateWidth,p.plateDepth);if(packed.oversized.length)fail('box nuovo: modello piccolo fuori piatto');
     if(to3MF(packed.plates[0]).length<1000)fail('box nuovo: export vuoto');
     solids.forEach(m=>m.delete());
