@@ -488,6 +488,16 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
     const segments=gridSegments(p),result=buildBox(M,p);if(segments.reduce((n,g)=>n+g.columns*g.rows,0)!==48)fail('grid: celle perse');
     const packed=packPlates(result.parts,plateSize,plateSize);if(packed.oversized.length||packed.plates.flat().length!==result.parts.length)fail('grid: segmenti oltre piatto');
     const solids=result.parts.map(solid);
+    for(const [i,g] of segments.entries()) {
+      const bounds=solids[i].boundingBox();
+      if(Math.abs(bounds.max[2]-5)>0.01||Math.abs(bounds.min[2])>0.01)fail('grid: altezza diversa da 5 mm');
+      for(let y=0;y<g.rows;y++)for(let x=0;x<g.columns;x++) {
+        const probe=M.Manifold.cube([30,30,7]).translate([(g.x+x+0.5-p.gridColumns/2)*42-15,(g.y+y+0.5-p.gridRows/2)*42-15,-1]);
+        const hit=solids[i].intersect(probe);
+        if(hit.volume()>0.001)fail('grid: fondo pieno nella cella');
+        hit.delete();probe.delete();
+      }
+    }
     for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>0.01)fail('grid: code di rondine in collisione');hit.delete();}
     for(const m of solids){const c=m.decompose();if(m.status()!=='NoError'||c.length!==1)fail('grid: sezioni scollegate');c.forEach(x=>x.delete());m.delete();}
   }
