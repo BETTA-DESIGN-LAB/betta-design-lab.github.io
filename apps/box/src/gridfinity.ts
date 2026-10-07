@@ -2,7 +2,9 @@ import { Scope, toMeshData, type ManifoldToplevel, type Manifold, type Part } fr
 import type { Params } from './params.ts';
 export const GRID_PITCH = 42;
 export const FOOT_HEIGHT = 4.75;
-export const GRID_FLOOR = 3;
+// Quota dei piedi sopra il piano: griglia aperta alta 5 mm, senza fondo.
+export const GRID_FLOOR = 0.25;
+export const GRID_HEIGHT = 5;
 /** Profilo standard: smusso 0.8, tratto verticale 1.8, smusso 2.15 mm.
  * Quote verificate in gridfinity-unofficial/specification e Gridfinity Rebuilt.
  * Implementazione originale; nessuna vite, magnete o clip elastica. */
@@ -38,10 +40,14 @@ export function buildGrid(M: ManifoldToplevel,p:Params): Part[] {
     const female=s.t(s.t(s.t(joint.offset(p.connectorClearance,'Round',2,16)).extrude(3.2)).translate([0,0,-0.1]));
     for(const [i,g] of gridSegments(p).entries()) {
       const w=g.columns*42,d=g.rows*42;
-      let plate=s.t(M.Manifold.cube([w,d,7.75]).translate([-w/2,-d/2,0]));
+      let plate=s.t(M.Manifold.cube([w,d,GRID_HEIGHT]).translate([-w/2,-d/2,0]));
       const cavities=[];
+      const opening=s.t(M.Manifold.cube([35.6,35.6,GRID_HEIGHT+2]).translate([-17.8,-17.8,-1]));
       for(let y=0;y<g.rows;y++)for(let x=0;x<g.columns;x++)
-        cavities.push(s.t(socket.translate([(x+0.5)*42-w/2,(y+0.5)*42-d/2,3])));
+        {
+        const cx=(x+0.5)*42-w/2,cy=(y+0.5)*42-d/2;
+        cavities.push(s.t(socket.translate([cx,cy,GRID_FLOOR])),s.t(opening.translate([cx,cy,0])));
+      }
       plate=s.t(plate.subtract(s.t(M.Manifold.union(cavities))));
       for(let y=0;y<g.rows;y++) {
         const at=(y+0.5)*42-d/2;
