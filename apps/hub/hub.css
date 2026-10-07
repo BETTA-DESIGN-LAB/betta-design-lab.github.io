@@ -1,20 +1,35 @@
-.hub { max-width: 1120px; margin: 0 auto; padding: 0 16px 64px; }
-.hub-hero { padding: 56px 0 32px; max-width: 680px; }
-.hub-hero h1 { font-family: var(--bdl-font-display); font-weight: 600; font-size: clamp(34px, 6vw, 52px); line-height: 1.05; letter-spacing: -0.02em; margin: 0 0 14px; }
-.hub-hero p { font-size: 17px; color: var(--bdl-muted); margin: 0; }
-.hub-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
-.hub-fact { font-size: 13px; padding: 5px 11px; border-radius: 999px; background: var(--bdl-accent-soft); color: var(--bdl-text); }
-.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.hub-card { position: relative; display: flex; flex-direction: column; background: var(--bdl-surface); border: 1px solid var(--bdl-border); border-radius: 16px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.15s, box-shadow 0.15s; }
-a.hub-card:hover { transform: translateY(-2px); box-shadow: var(--bdl-shadow); }
-a.hub-card:focus-visible { outline: 2px solid var(--bdl-accent); outline-offset: 2px; }
-.hub-art { aspect-ratio: 4 / 3; display: grid; place-items: center; background: var(--bdl-surface-2); color: var(--bdl-accent); }
-.hub-art svg { width: 46%; height: auto; }
-.hub-card[data-status='planned'] .hub-art { color: var(--bdl-muted); opacity: 0.7; }
-.hub-body { padding: 14px 16px 18px; display: grid; gap: 4px; }
-.hub-cat { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--bdl-muted); font-weight: 700; }
-.hub-name { font-weight: 700; font-size: 17px; }
-.hub-blurb { font-size: 14px; color: var(--bdl-muted); }
-.hub-badge { position: absolute; top: 12px; left: 12px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--bdl-surface); border: 1px solid var(--bdl-border); color: var(--bdl-muted); }
-.hub-badge[data-kind='live'] { background: var(--bdl-accent); border-color: var(--bdl-accent); color: var(--bdl-accent-ink); }
-.hub-footer { margin-top: 48px; font-size: 13px; color: var(--bdl-muted); }
+.hub { max-width: 1180px; margin: 0 auto; padding: 0 28px 48px; }
+.hub-hero { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 60px; padding: 72px 0 64px; }
+.hub-eyebrow { font-size: 12px; font-weight: 750; color: var(--bdl-muted); letter-spacing: .12em; text-transform: uppercase; }
+.hub-hero h1 { font-family: var(--bdl-font-display); font-weight: 800; font-size: clamp(44px, 6vw, 76px); line-height: 1.02; letter-spacing: -.065em; margin: 18px 0 24px; }
+.hub-hero h1 span { color: var(--bdl-accent); }
+.hub-hero p { font-size: 18px; line-height: 1.65; color: var(--bdl-muted); max-width: 430px; margin: 0 0 28px; }
+.hub-hero .bdl-btn { padding: 14px 22px; border-radius: 999px; gap: 20px; }
+.hub-facts { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 24px; }
+.hub-fact { font-size: 12px; color: var(--bdl-muted); }
+.hub-brand-card { padding: 34px 24px 24px; border: 1px solid var(--bdl-border); border-radius: 36px; background: #fff; box-shadow: 0 18px 55px rgb(0 0 0 / .04); transform: rotate(2deg); }
+.hub-brand-card img { width: 100%; height: auto; display: block; }
+.hub-brand-caption { display: block; text-align: center; font-size: 13px; color: #686868; margin-top: 24px; }
+.hub-grid-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 20px; margin: 10px 0 26px; scroll-margin-top: 24px; }
+.hub-grid-heading h2 { font-size: clamp(24px, 3vw, 32px); letter-spacing: -.04em; margin: 7px 0 0; }
+.hub-count { font-size: 13px; color: var(--bdl-muted); }
+.hub-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 20px; }
+.hub-card { position: relative; display: flex; flex-direction: column; background: var(--bdl-surface); border: 1px solid var(--bdl-border); border-radius: 26px; overflow: hidden; text-decoration: none; color: inherit; transition: transform .2s, box-shadow .2s, border-color .2s; }
+a.hub-card:hover { transform: translateY(-5px); box-shadow: 0 14px 36px rgb(0 0 0 / .07); border-color: color-mix(in srgb,var(--bdl-accent) 40%,var(--bdl-border)); }
+a.hub-card:focus-visible { outline: 3px solid var(--bdl-accent); outline-offset: 4px; }
+.hub-art { height: 152px; display: flex; align-items: center; padding: 44px 24px 16px; background: radial-gradient(ellipse at 80% 0%,var(--bdl-accent-soft),var(--bdl-surface) 70%); }
+.hub-product-icon { width: 80px; height: 80px; display: grid; place-items: center; border-radius: 24px; background: var(--bdl-accent-soft); color: var(--bdl-accent); }
+.hub-product-icon svg { width: 48px; height: 48px; }
+.hub-card[data-status='planned'] .hub-art { background: var(--bdl-surface); }
+.hub-card[data-status='planned'] .hub-product-icon { background: var(--bdl-surface-2); color: var(--bdl-muted); }
+.hub-body { padding: 12px 24px 24px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.hub-cat { font-size: 11px; letter-spacing: .04em; color: var(--bdl-muted); }
+.hub-name { font-weight: 750; font-size: 21px; letter-spacing: -.025em; }
+.hub-blurb { font-size: 14px; line-height: 1.6; color: var(--bdl-muted); }
+.hub-card-action { display: flex; justify-content: space-between; align-items: center; padding-top: 22px; margin-top: auto; font-weight: 700; font-size: 13px; }
+.hub-card-action > span { font-size: 22px; color: var(--bdl-accent); }
+.hub-badge { position: absolute; top: 18px; right: 20px; font-size: 11px; font-weight: 650; padding: 4px 10px; border-radius: 999px; background: var(--bdl-surface-2); color: var(--bdl-muted); }
+.hub-badge[data-kind='live'] { background: var(--bdl-accent-soft); color: var(--bdl-text); }
+.hub-footer { margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--bdl-border); font-size: 12px; color: var(--bdl-muted); line-height: 1.8; }
+@media (max-width: 900px) { .hub-hero { gap: 28px; padding: 48px 0; } .hub-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 600px) { .hub { padding: 0 18px 32px; } .hub-hero { grid-template-columns: 1fr; gap: 32px; padding: 36px 0 42px; } .hub-hero h1 { font-size: 54px; } .hub-hero p { font-size: 16px; } .hub-brand-card { max-width: 340px; padding: 24px; transform: none; } .hub-brand-caption { margin-top: 16px; } .hub-grid { grid-template-columns: 1fr; gap: 16px; } .hub-grid-heading { align-items: flex-start; flex-direction: column; gap: 12px; } .hub-art { height: 130px; } }
