@@ -1,7 +1,7 @@
 import { bounds, type Part } from '@bdl/geometry';
 import { groundPart, separateParts } from '../../coaster/src/parts.ts';
 export function printable(part: Part): Part {
-  if(part.id==='case') {const positions=new Float32Array(part.mesh.positions);for(let i=0;i<positions.length;i+=3){const y=positions[i+1],z=positions[i+2];positions[i+1]=-z;positions[i+2]=y;}return groundPart({...part,mesh:{positions,indices:part.mesh.indices}});}
+  if(part.id==='case') {const positions=new Float32Array(part.mesh.positions);for(let i=0;i<positions.length;i+=3){const y=positions[i+1],z=positions[i+2];positions[i+1]=z;positions[i+2]=-y;}return groundPart({...part,mesh:{positions,indices:part.mesh.indices}});}
   const face = part.id.split('-')[1];
   if (!part.id.startsWith('art-') || face === 'lid') return groundPart(part);
   const positions = new Float32Array(part.mesh.positions);
