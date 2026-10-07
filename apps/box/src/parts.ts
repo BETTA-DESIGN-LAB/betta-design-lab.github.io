@@ -1,6 +1,7 @@
 import { bounds, type Part } from '@bdl/geometry';
 import { groundPart, separateParts } from '../../coaster/src/parts.ts';
 export function printable(part: Part): Part {
+  if(part.id==='case') {const positions=new Float32Array(part.mesh.positions);for(let i=0;i<positions.length;i+=3){const y=positions[i+1],z=positions[i+2];positions[i+1]=-z;positions[i+2]=y;}return groundPart({...part,mesh:{positions,indices:part.mesh.indices}});}
   const face = part.id.split('-')[1];
   if (!part.id.startsWith('art-') || face === 'lid') return groundPart(part);
   const positions = new Float32Array(part.mesh.positions);
@@ -42,8 +43,10 @@ export function packPlates(parts: readonly Part[], width: number, depth: number)
   }
   return {plates,oversized};
 }
-export function openParts(parts: readonly Part[], width: number): Part[] {
+export function openParts(parts: readonly Part[], width: number, model = 'sliding'): Part[] {
   return parts.map(part => {
+    if(model==='drawer' && (part.id==='body'||part.id.startsWith('art-front-'))) {const positions=new Float32Array(part.mesh.positions);for(let i=1;i<positions.length;i+=3)positions[i]-=width*0.65;return {...part,mesh:{positions,indices:part.mesh.indices}};}
+    if(model==='drawer')return part;
     if (part.id !== 'lid' && !part.id.startsWith('art-lid-')) return part;
     const positions = new Float32Array(part.mesh.positions);
     for (let i=0;i<positions.length;i+=3) positions[i]+=width*0.65;
