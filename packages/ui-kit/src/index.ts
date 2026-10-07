@@ -31,7 +31,7 @@ export const ICONS = {
   download: svg('<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>'),
   link: svg('<path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/>'),
   reset: svg('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>'),
-  iso: svg('<path d="M12 2l9 5v10l-9 5-9-5V7z"/><path d="M12 22V12M21 7l-9 5-9-5"/>'),
+  iso: svg('<circle cx="12" cy="12" r="4"/><ellipse cx="12" cy="12" rx="10" ry="5" transform="rotate(-35 12 12)"/>'),
   top: svg('<rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="1.5"/>'),
   front: svg('<rect x="3" y="9" width="18" height="8" rx="1.5"/><path d="M3 20h18"/>'),
   fit: svg('<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>'),
@@ -70,12 +70,19 @@ export function themeToggle(): HTMLButtonElement {
 
 // ---------- Cornice ----------
 
+/** Logo ufficiale originale; il simbolo usa una finestra CSS, senza alterare il file. */
+export function brandLogo(href = './'): HTMLAnchorElement {
+  return el('a', { class: 'bdl-logo', href, 'aria-label': BRAND.name + ' · Home' },
+    el('span', { class: 'bdl-logo-symbol', 'aria-hidden': 'true' },
+      el('img', { src: `${href}${BRAND.logo}`, alt: '', width: 1774, height: 887 })),
+    el('span', { class: 'bdl-wordmark' }, 'BETTA', el('span', {}, 'DESIGN LAB'), el('small', {}, '3D')));
+}
+
 export function topbar(title?: string): HTMLElement {
   return el(
     'header',
     { class: 'bdl-topbar' },
-    el('a', { class: 'bdl-logo', href: BRAND.urls.hub.startsWith('./') ? '../' : BRAND.urls.hub },
-      el('span', { class: 'bdl-logo-mark' }, 'b'), BRAND.name),
+    brandLogo(BRAND.urls.hub.startsWith('./') ? '../' : BRAND.urls.hub),
     title ? el('span', { class: 'bdl-topbar-title' }, title) : null,
     el('span', { class: 'bdl-spacer' }),
     themeToggle(),
