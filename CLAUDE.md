@@ -21,3 +21,10 @@
 
 `pnpm new:generator <id> "Nome" "Descrizione" [Categoria]`, poi riscrivi `params.ts` e `geometry.ts`,
 aggiungi i casi a `scripts/test-geometry.ts`, verifica con `pnpm typecheck && pnpm test && pnpm build`.
+
+## Identità visiva ufficiale (aggiornata il 7 ottobre 2026)
+
+- Usare il nuovo logo fornito dall’utente: `public/betta-design-lab-logo.png`. Conservare il file originale, senza ridisegnarlo o cambiarne i colori.
+- Palette della suite: arancione `#ff4b16`, nero `#111111`, bianco `#ffffff`; neutri solo per fondi, testo secondario e bordi. I colori dei filamenti restano liberi.
+- Aspetto fluido, professionale, arioso: forme morbide, icone piatte coerenti, niente estetica CAD nelle schede o nella navigazione.
+- Tutti i nuovi progetti e generatori Betta Design Lab devono riutilizzare il logo e i componenti condivisi di `@bdl/brand` e `@bdl/ui-kit`, in entrambi i temi e su mobile.
