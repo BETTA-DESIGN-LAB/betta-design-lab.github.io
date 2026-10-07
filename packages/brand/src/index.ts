@@ -4,7 +4,9 @@
 export const BRAND = {
   name: 'Betta Design Lab',
   shortName: 'bettadesignlab',
-  tagline: 'Generatori parametrici per stampa 3D: personalizza, guarda, scarica.',
+  tagline: 'Un’idea, il tuo tocco, un oggetto da creare. Personalizza e porta le tue idee nella stampa 3D.',
+  logo: 'betta-design-lab-logo.png',
+  colors: { orange: '#ff4b16', black: '#111111', white: '#ffffff' },
   urls: {
     hub: './',
     // TODO: aggiornare quando la repo GitHub esiste
