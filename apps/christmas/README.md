@@ -9,3 +9,13 @@ La vista compatta mostra l'oggetto montato. La vista sul piatto separa i pezzi e
 Le semisfere sono orientate con il bordo di giunzione sul piatto. Verificare nello slicer supporti e orientamento dei piccoli inserti curvi. L'incastro non è stato verificato con una stampa fisica: stampare un campione e regolare il gioco in base a materiale e stampante. Non sono previsti candele o fonti di calore all'interno.
 
 Verifica: `pnpm typecheck`, `pnpm test`, `pnpm build`. I test includono le geometrie esistenti e le combinazioni di sagome, superfici, tecniche e dimensioni del nuovo generatore.
+
+## Interazione
+
+Il pannello mostra soltanto i controlli applicabili: nessuna opzione tipografica senza testo, nessun colore degli inserti in incisione, nessun foro senza anello e nessuna regolazione delle coste sulla superficie liscia. Le sezioni aperte e il cursore della scritta vengono conservati quando il pannello si aggiorna.
+
+Testo, simbolo, colori e impostazioni comuni rimangono durante i cambi di modello. Ogni modello conserva le posizioni e la disposizione sul piatto; nel passaggio alla sfera vengono adattate solo le misure/posizioni fuori dall'area decorabile. La scritta contenuta viene avvicinata automaticamente alla sagoma quando necessario.
+
+Il calcolo delle due versioni della geometria avviene in un worker. Mentre il calcolo procede, l'interfaccia resta utilizzabile; richieste superate vengono ignorate e gli export si riattivano soltanto per la configurazione corrente valida. Durante il trascinamento si muove tutta la scritta (inclusi i puntini e le parti sulle due semisfere); l'aggiornamento ricostruisce la geometria alla fine del gesto. Le transizioni tra viste rispettano la preferenza per il movimento ridotto.
+
+L'anello mobile con aggancio/separazione “slime” è una direzione registrata per il futuro aggiornamento dei portachiavi, non una funzione già implementata qui.

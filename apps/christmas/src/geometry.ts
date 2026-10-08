@@ -3,8 +3,8 @@ import type {SvgArtwork} from '../../coaster/src/svg.ts';
 import {sanitize,type Params} from './params.ts';
 export interface Design{text?:SvgArtwork;extra?:SvgArtwork}
 /** Geometrie originali: ornamenti piatti e guscio ondulato in due metà. */
-export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=false):{parts:Part[];warnings:string[]}{
- const p=sanitize(input),s=new Scope(),parts:Part[]=[],warnings:string[]=[];
+export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=false):{parts:Part[];warnings:string[];adjustments:{x?:number;y?:number}}{
+ const p=sanitize(input),s=new Scope(),parts:Part[]=[],warnings:string[]=[],adjustments:{x?:number;y?:number}={};
  try{
  const C=M.CrossSection,G=M.Manifold,R=p.size/2;
  const circle=(r:number,x=0,y=0)=>s.t(s.t(C.circle(r,64)).translate([x,y]));
@@ -34,10 +34,10 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  if(p.containText){const text=drawings.find(d=>d.id==='text');if(text){
  const envelope=p.shape==='snowflake'?s.t(C.hull([outline])):outline;
  const safe=s.t(envelope.offset(-1.4,'Round',2,32));
- const relative=s.t(text.shape.translate([-p.x,-p.y]));
- const candidate=(k:number)=>s.t(s.t(relative.scale([k,k])).translate([p.x,p.y]));
+ const relative=s.t(text.shape.translate([-p.x,-p.y]));let x=p.x,y=p.y;
+ const candidate=(k:number)=>s.t(s.t(relative.scale([k,k])).translate([x,y]));
  const fits=(c:CrossSection)=>s.t(c.subtract(safe)).area()<1e-7;
- if(!fits(text.shape)){if(!fits(candidate(.02)))throw new Error('La scritta è fuori dalla sagoma: avvicinala al centro oppure disattiva “Scritta dentro la sagoma”.');
+ if(!fits(text.shape)){if(!fits(candidate(.2))){x=0;y=0;if(!fits(candidate(.02)))throw new Error('La sagoma è troppo piccola per questa scritta.');let low=0,high=1;for(let i=0;i<18;i++){const mid=(low+high)/2;x=p.x*mid;y=p.y*mid;if(fits(candidate(.2)))low=mid;else high=mid;}x=p.x*low*.97;y=p.y*low*.97;adjustments.x=x;adjustments.y=y;}
  let lo=.02,hi=1;for(let i=0;i<18;i++){const mid=(lo+hi)/2;if(fits(candidate(mid)))lo=mid;else hi=mid;}text.shape=candidate(lo*.995);
  }
  }}
@@ -79,7 +79,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  for(const d of additions){append(s.t(s.t(d.solid.intersect(lowerClip)).subtract(lower)),d.id+'-lower',d.id==='text'?'Nome inferiore':'Simbolo inferiore',d.color);append(s.t(s.t(d.solid.intersect(upperClip)).subtract(upper)),d.id+'-upper',d.id==='text'?'Nome superiore':'Simbolo superiore',d.color);}
  warnings.push('Pallina cava in due metà con incastro. Controlla i supporti nello slicer; prova l’incastro prima della stampa finale.');
  }
- return {parts,warnings};
+ return {parts,warnings,adjustments};
  }finally{s.free();}
 }
 /** Le semisfere si stampano con il bordo di unione sul piatto. */

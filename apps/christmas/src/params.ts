@@ -14,7 +14,7 @@ export function sanitize(input:Params):Params{
  p.model=p.model==='sphere'?'sphere':'flat';p.shape=['bauble','tree','star','snowflake','heart','bell','gingerbread'].includes(p.shape)?p.shape:'bauble';
  p.style=['solid','outline','snow'].includes(p.style)?p.style:'solid';p.profile=['smooth','wave','spiral'].includes(p.profile)?p.profile:'wave';p.mode=['relief','inlay','engrave'].includes(p.mode)?p.mode:'relief';p.font=['cursive','sans','serif'].includes(p.font)?p.font:'cursive';
  p.text=String(p.text??'').slice(0,32);p.containText=typeof p.containText==='boolean'?p.containText:true;p.loop=typeof p.loop==='boolean'?p.loop:true;
- p.relief=Math.min(p.relief,p.thickness-.8,p.wall*.6);
+ p.relief=Math.min(p.relief,p.model==='sphere'?p.wall*.6:p.thickness-.8);
  for(const k of ['baseColor','artColor','extraColor'] as const)if(!/^#[0-9a-f]{6}$/i.test(p[k]))p[k]=DEFAULTS[k];
  return p;
 }

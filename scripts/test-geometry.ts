@@ -21,6 +21,7 @@ import { build as buildKeychain } from '../apps/keychain/src/geometry.ts';
 import { DEFAULTS as CHAIN_DEFAULTS, sanitize as sanitizeChain } from '../apps/keychain/src/params.ts';
 import { lettering, qrArtwork } from '../apps/keychain/src/artwork.ts';
 import { build as buildChristmas, printParts as printChristmas } from '../apps/christmas/src/geometry.ts';
+import { capabilities as christmasCapabilities, changeModel, positionDraft } from '../apps/christmas/src/interaction.ts';
 import { DEFAULTS as CHRISTMAS_DEFAULTS, sanitize as sanitizeChristmas } from '../apps/christmas/src/params.ts';
 const M = await loadManifold();
 let failures = 0;
@@ -603,6 +604,18 @@ for(const shape of ['bauble','tree','star','snowflake','heart','bell','gingerbre
 }
 
 {runs++;const p=buildChristmas(M,{...CHRISTMAS_DEFAULTS,containText:false,x:55,y:60},{text:chainArt}).parts[0];const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();const m=new M.Manifold(mesh),c=m.decompose();if(c.length!==1)fail('Natale: anello scollegato con scritta libera');c.forEach(x=>x.delete());m.delete();}
+
+// I cambi di modello conservano i contenuti e recuperano la disposizione precedente.
+{
+ runs++;const original={...CHRISTMAS_DEFAULTS,text:'Auguri',x:50,y:35,containText:false,baseColor:'#123456',artColor:'#abcdef',angle:25,extraX:55,extraY:30};
+ const saved=positionDraft(original),sphere=changeModel(original,'sphere'),back=changeModel({...sphere,text:'Giorgio'},'flat',saved);
+ if(back.x!==50||back.y!==35||back.angle!==25||back.extraX!==55||back.text!=='Giorgio'||back.baseColor!=='#123456'||back.artColor!=='#abcdef')fail('Natale: cambio modello perde la personalizzazione');
+ if(Math.abs(sphere.x)>=50||Math.abs(sphere.extraX)>=55)fail('Natale: modello sferico non adatta la posizione');
+ runs++;const blank=christmasCapabilities({...CHRISTMAS_DEFAULTS,text:'',loop:false},false),carved=christmasCapabilities({...CHRISTMAS_DEFAULTS,model:'sphere',mode:'engrave',profile:'smooth'},true);
+ if(blank.text||blank.decoration||blank.hole||carved.colors||carved.depth||carved.ribs||carved.twist)fail('Natale: controlli incompatibili visibili');
+ runs++;const flat=sanitizeChristmas({...CHRISTMAS_DEFAULTS,wall:1.2,relief:1.4,thickness:3});if(flat.relief!==1.4)fail('Natale: dimensione inattiva limita il rilievo');
+ runs++;const fitted=buildChristmas(M,{...CHRISTMAS_DEFAULTS,shape:'star',x:65,y:65},{text:chainArt});if(!fitted.parts.length||fitted.adjustments.x===undefined||fitted.adjustments.y===undefined)fail('Natale: cambio forma non adatta la scritta');
+}
 
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);

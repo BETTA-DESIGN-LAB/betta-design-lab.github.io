@@ -11,6 +11,10 @@ export interface ViewerOptions {
   /** Lato del piatto in mm (default 256, Bambu X1/P1/A1). */
   plateSize?: number;
   fitPlate?: () => boolean;
+  /** Movimento morbido tra viste, attivato soltanto dal generatore che lo richiede. */
+  smoothView?: boolean;
+  dragGroup?: (id:string) => string;
+  onDragState?: (active:boolean) => void;
   canMovePart?: (id: string) => boolean;
   /** Fronte XZ per decorazioni su oggetti verticali; il piatto resta XY. */
   movePlane?: () => 'xy' | 'xz';
@@ -102,7 +106,8 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   };
   let pointerStart: [number, number] | null = null;
   let moveEnabled=false;
-  let dragging: {mesh:THREE.Object3D; start:THREE.Vector3; origin:THREE.Vector3; pointer:number} | null=null;
+  let dragging: {mesh:THREE.Object3D; start:THREE.Vector3; origin:THREE.Vector3; pointer:number;members:{mesh:THREE.Object3D;origin:THREE.Vector3}[]} | null=null;
+  let transition:{from:THREE.Vector3;to:THREE.Vector3;targetFrom:THREE.Vector3;targetTo:THREE.Vector3;start:number}|null=null;
   const rayAt = (event:PointerEvent) => {
     const rect=renderer.domElement.getBoundingClientRect(), ray=new THREE.Raycaster();
     ray.setFromCamera(new THREE.Vector2(2*(event.clientX-rect.left)/rect.width-1,1-2*(event.clientY-rect.top)/rect.height),camera);
@@ -111,12 +116,13 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   const floorPoint = (event:PointerEvent) => rayAt(event).ray.intersectPlane(new THREE.Plane(opts.movePlane?.()==='xz'?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1),0),new THREE.Vector3());
   const onDown = (event:PointerEvent) => {
     if(event.button!==0)return;
-    pointerStart=[event.clientX,event.clientY];
+    transition=null;pointerStart=[event.clientX,event.clientY];
     if(!moveEnabled || !opts.onMovePart)return;
     const hit=rayAt(event).intersectObjects(model.children,false)[0], start=floorPoint(event);
     if(!hit || !start || opts.canMovePart?.(hit.object.name)===false)return;
     event.stopImmediatePropagation();event.preventDefault();controls.enabled=false;
-    dragging={mesh:hit.object,start,origin:hit.object.position.clone(),pointer:event.pointerId};
+    const group=opts.dragGroup?.(hit.object.name),members=model.children.filter(child=>group?opts.dragGroup?.(child.name)===group:child===hit.object).map(mesh=>({mesh,origin:mesh.position.clone()}));
+    dragging={mesh:hit.object,start,origin:hit.object.position.clone(),pointer:event.pointerId,members};opts.onDragState?.(true);
     renderer.domElement.setPointerCapture(event.pointerId);
     selected=hit.object.name;highlight();opts.onSelectPart?.(selected);
   };
@@ -124,7 +130,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     if(!dragging || dragging.pointer!==event.pointerId)return;
     const at=floorPoint(event);if(!at)return;
     event.stopImmediatePropagation();
-    dragging.mesh.position.copy(dragging.origin).add(at.sub(dragging.start));
+    const delta=at.sub(dragging.start);for(const member of dragging.members)member.mesh.position.copy(member.origin).add(delta);
   };
   const onUp = (event:PointerEvent) => {
     const start=pointerStart;pointerStart=null;
@@ -132,13 +138,13 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
       event.stopImmediatePropagation();const d=dragging;dragging=null;controls.enabled=true;
       if(renderer.domElement.hasPointerCapture(event.pointerId))renderer.domElement.releasePointerCapture(event.pointerId);
       const dx=d.mesh.position.x-d.origin.x,dy=opts.movePlane?.()==='xz'?d.mesh.position.z-d.origin.z:d.mesh.position.y-d.origin.y;
-      if(Math.hypot(dx,dy)>0.01)opts.onMovePart?.(d.mesh.name,dx,dy);
+      if(Math.hypot(dx,dy)>0.01)opts.onMovePart?.(d.mesh.name,dx,dy);opts.onDragState?.(false);
       return;
     }
     if(!opts.onSelectPart || !start || Math.hypot(event.clientX-start[0],event.clientY-start[1])>5)return;
     const hit=rayAt(event).intersectObjects(model.children,false)[0];selected=hit?hit.object.name:null;highlight();opts.onSelectPart(selected);
   };
-  const onCancel = () => {if(dragging)dragging.mesh.position.copy(dragging.origin);dragging=null;pointerStart=null;controls.enabled=true;};
+  const onCancel = () => {if(dragging)for(const member of dragging.members)member.mesh.position.copy(member.origin);dragging=null;pointerStart=null;controls.enabled=true;opts.onDragState?.(false);};
   renderer.domElement.addEventListener('pointerdown',onDown,true);
   renderer.domElement.addEventListener('pointermove',onMove,true);
   renderer.domElement.addEventListener('pointerup',onUp,true);
@@ -158,6 +164,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   let raf = 0;
   const loop = () => {
     raf = requestAnimationFrame(loop);
+    if(transition){const progress=Math.min(1,(performance.now()-transition.start)/260),ease=1-(1-progress)**3;camera.position.lerpVectors(transition.from,transition.to,ease);controls.target.lerpVectors(transition.targetFrom,transition.targetTo,ease);if(progress===1)transition=null;}
     controls.update();
     renderer.render(scene, camera);
   };
@@ -178,8 +185,9 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
     const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
     const dist = (r / Math.sin(Math.min(vHalf, hHalf))) * 1.0;
-    controls.target.copy(c);
-    camera.position.copy(c).addScaledVector(dir.normalize(), dist);
+    const destination=c.clone().addScaledVector(dir.normalize(),dist);
+    if(opts.smoothView&&!first&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)transition={from:camera.position.clone(),to:destination,targetFrom:controls.target.clone(),targetTo:c,start:performance.now()};
+    else{transition=null;controls.target.copy(c);camera.position.copy(destination);}
     camera.near = dist / 100;
     camera.far = dist * 20;
     camera.updateProjectionMatrix();

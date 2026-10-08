@@ -236,3 +236,12 @@ a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--b
 .bdl-plate-controls { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .bdl-plate-controls[hidden] { display:none; }
 .bdl-text-input { display:block; width:100%; box-sizing:border-box; margin-top:8px; padding:12px; border:1px solid var(--bdl-border); border-radius:12px; background:var(--bdl-surface); color:var(--bdl-text); font:inherit; }
+
+/* Progressioni morbide del pannello Natale, senza riavviare la vista 3D. */
+.bdl-christmas-controls > .bdl-section { animation: bdl-panel-reveal .2s ease-out; }
+.bdl-christmas-controls details > summary { cursor: pointer; padding: 14px 0; font-weight: 600; }
+.bdl-christmas-controls .bdl-seg button { transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+.bdl-stage[aria-busy="true"] .bdl-status[data-kind="busy"]::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; background: var(--bdl-accent); animation: bdl-breathe 1s ease-in-out infinite; }
+@keyframes bdl-panel-reveal { from { opacity: .6; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes bdl-breathe { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .bdl-christmas-controls > .bdl-section, .bdl-stage[aria-busy="true"] .bdl-status::before { animation: none; } .bdl-christmas-controls .bdl-seg button { transition: none; } }
