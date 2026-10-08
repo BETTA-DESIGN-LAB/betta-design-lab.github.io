@@ -30,6 +30,17 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  case 'gingerbread':outline=union([circle(R*.27,0,R*.7),rect(R*.47,R*.8,0,R*.05),segment([-R*.58,R*.32],[R*.58,R*.32],R*.28),segment([-R*.13,-R*.23],[-R*.38,-R*.8],R*.31),segment([R*.13,-R*.23],[R*.38,-R*.8],R*.31)]);break;
  default:outline=union([circle(R),rect(R*.38,R*.22,0,R*.98)]);
  }
+ // Adatta il nome intero, senza ritagliare i tratti delle lettere.
+ if(p.containText){const text=drawings.find(d=>d.id==='text');if(text){
+ const envelope=p.shape==='snowflake'?s.t(C.hull([outline])):outline;
+ const safe=s.t(envelope.offset(-1.4,'Round',2,32));
+ const relative=s.t(text.shape.translate([-p.x,-p.y]));
+ const candidate=(k:number)=>s.t(s.t(relative.scale([k,k])).translate([p.x,p.y]));
+ const fits=(c:CrossSection)=>s.t(c.subtract(safe)).area()<1e-7;
+ if(!fits(text.shape)){if(!fits(candidate(.02)))throw new Error('La scritta è fuori dalla sagoma: avvicinala al centro oppure disattiva “Scritta dentro la sagoma”.');
+ let lo=.02,hi=1;for(let i=0;i<18;i++){const mid=(lo+hi)/2;if(fits(candidate(mid)))lo=mid;else hi=mid;}text.shape=candidate(lo*.995);
+ }
+ }}
  let base=outline;
  if(p.style==='outline'&&p.shape!=='snowflake')base=s.t(outline.subtract(s.t(outline.offset(-Math.max(2.5,p.size*.045),'Round',2,32))));
  if(p.style==='snow'&&p.shape!=='snowflake'){
@@ -39,7 +50,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  // Appoggi e collegamenti automatici per scritte/icone, anche sui modelli traforati.
  for(const d of drawings){const backing=s.t(d.shape.offset(1.4,'Round',2,32));base=s.t(base.add(backing));}
  let islands=base.decompose().map(a=>s.t(a));if(islands.length>1){let joined=islands[0];for(const island of islands.slice(1)){let a:Vec2=[0,0],b:Vec2=[0,0],distance=Infinity;for(const x of joined.toPolygons().flat())for(const y of island.toPolygons().flat()){const v=Math.hypot(x[0]-y[0],x[1]-y[1]);if(v<distance){distance=v;a=x;b=y;}}joined=s.t(s.t(joined.add(island)).add(segment(a,b,2.4)));}base=joined;}
- const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];if(p.shape==='bauble')top[0]=0;if(p.loop){const center:Vec2=[top[0],top[1]+p.hole/2];base=s.t(base.add(circle(p.hole/2+2,...center)));base=s.t(base.subtract(circle(p.hole/2,...center)));}
+ const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];if(p.shape==='bauble'&&Math.abs(top[0])<R*.2&&top[1]<R*1.2)top[0]=0;if(p.loop){const center:Vec2=[top[0],top[1]+p.hole/2];base=s.t(base.add(circle(p.hole/2+2,...center)));base=s.t(base.subtract(circle(p.hole/2,...center)));}
  let body=s.t(base.extrude(p.thickness));const solids:{solid:Manifold;id:string;color:string}[]=[];
  for(const d of drawings){const z=p.mode==='relief'?p.thickness-(seated?.25:0):p.thickness-p.relief;const h=p.mode==='relief'?p.relief+(seated?.25:0):p.relief;const solid=s.t(s.t(d.shape.extrude(h)).translate([0,0,z]));if(p.mode!=='relief'||seated)body=s.t(body.subtract(solid));for(const old of solids)old.solid=s.t(old.solid.subtract(solid));if(p.mode!=='engrave')solids.push({...d,solid});}
  parts.push({id:'base',name:'Ornamento',color:p.baseColor,mesh:toMeshData(body)});for(const d of solids)append(d.solid,d.id,d.id==='text'?'Nome':'Simbolo',d.color);

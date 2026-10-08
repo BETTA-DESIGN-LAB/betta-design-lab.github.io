@@ -19,7 +19,7 @@ import { printPart as printKeycapPart, printAssembly as printKeycapAssembly } fr
 
 import { build as buildKeychain } from '../apps/keychain/src/geometry.ts';
 import { DEFAULTS as CHAIN_DEFAULTS, sanitize as sanitizeChain } from '../apps/keychain/src/params.ts';
-import { qrArtwork } from '../apps/keychain/src/artwork.ts';
+import { lettering, qrArtwork } from '../apps/keychain/src/artwork.ts';
 import { build as buildChristmas, printParts as printChristmas } from '../apps/christmas/src/geometry.ts';
 import { DEFAULTS as CHRISTMAS_DEFAULTS, sanitize as sanitizeChristmas } from '../apps/christmas/src/params.ts';
 const M = await loadManifold();
@@ -587,6 +587,22 @@ for(const ringType of ['external','internal'] as const){runs++;const q=qrArtwork
  const p=sanitizeChristmas({...CHRISTMAS_DEFAULTS,ribs:15,size:NaN,wall:Infinity,baseColor:'bad'});if(p.ribs%2||p.size!==75||p.wall!==1.8||p.baseColor!=='#ff4b16')fail('Natale: sanitizzazione');
  const files=unzipSync(to3MF(buildChristmas(M,CHRISTMAS_DEFAULTS,{text:chainArt}).parts,{title:'Natale'}));if(!files['3D/3dmodel.model'])fail('Natale: export 3MF');
 }
+
+// Il raster deve conservare integralmente ascendenti e discendenti (g, j, p, q, y).
+{
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'document');
+ let baseline=0,height=0;const ctx={font:'',textAlign:'',textBaseline:'',fillStyle:'',measureText:()=>({width:220,actualBoundingBoxLeft:8,actualBoundingBoxRight:222,actualBoundingBoxAscent:110,actualBoundingBoxDescent:105}),fillRect:()=>{},fillText:(_value:string,_x:number,y:number)=>{baseline=y;},getImageData:(_x:number,_y:number,w:number,h:number)=>{height=h;const data=new Uint8ClampedArray(w*h*4).fill(255);data[0]=data[1]=data[2]=0;return {width:w,height:h,data};}};
+ Object.defineProperty(globalThis,'document',{configurable:true,value:{createElement:()=>({width:0,height:0,getContext:()=>ctx})}});
+ try{runs++;lettering('g j p q y','cursive');if(baseline-110<12||baseline+105>height-12||ctx.textBaseline!=='alphabetic')fail('testo: discendenti troncati dal canvas');}finally{if(previous)Object.defineProperty(globalThis,'document',previous);else Reflect.deleteProperty(globalThis,'document');}
+}
+// Il testo contenuto non allarga il contorno; la modalità libera lo consente.
+for(const shape of ['bauble','tree','star','snowflake','heart','bell','gingerbread'] as const){
+ const p={...CHRISTMAS_DEFAULTS,shape,style:'solid' as const,loop:false,scale:100,text:'g'};
+ const clean=buildChristmas(M,{...p,text:''}).parts[0],inside=buildChristmas(M,p,{text:chainArt}).parts[0],free=buildChristmas(M,{...p,containText:false,x:55},{text:chainArt}).parts[0];
+ runs++;const a=bounds([clean]),b=bounds([inside]),c=bounds([free]);if(b.min[0]<a.min[0]-.001||b.max[0]>a.max[0]+.001||b.min[1]<a.min[1]-.001||b.max[1]>a.max[1]+.001)fail('Natale: testo contenuto cambia il bordo '+shape);if(c.max[0]<=a.max[0]+1)fail('Natale: testo libero non esce '+shape);
+}
+
+{runs++;const p=buildChristmas(M,{...CHRISTMAS_DEFAULTS,containText:false,x:55,y:60},{text:chainArt}).parts[0];const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();const m=new M.Manifold(mesh),c=m.decompose();if(c.length!==1)fail('Natale: anello scollegato con scritta libera');c.forEach(x=>x.delete());m.delete();}
 
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);
