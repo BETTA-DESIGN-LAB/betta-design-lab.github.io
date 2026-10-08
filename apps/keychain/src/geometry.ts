@@ -4,6 +4,10 @@ import { sanitize,type Params } from './params.ts';
 export interface Design { main?:SvgArtwork; extra?:SvgArtwork; cover?:SvgArtwork; initial?:SvgArtwork; team?:SvgArtwork; number?:SvgArtwork; qrModules?:number }
 export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const p=sanitize(input),s=new Scope(),warnings:string[]=[],parts:Part[]=[];
+ const hasInitial=p.model==='initial'&&Boolean(p.initial.trim());
+ const nameOnly=p.model==='name'||(p.model==='initial'&&!hasInitial);
+ if(p.model==='initial')design={...design,main:p.text.trim()?design.main:undefined,initial:hasInitial?design.initial:undefined};
+ if(p.model==='initial'&&!hasInitial&&!p.text.trim())throw new Error('Scrivi una lettera, un nome oppure entrambi.');
  try {
  const C=M.CrossSection;const decorations:{solid:Manifold;id:string;color:string}[]=[];
  const section=(a:SvgArtwork,filled=false)=>{const shapes=filled?a.filledShapes??[]:a.shapes;if(!shapes.length)throw new Error('Per la sagoma SVG servono aree piene.');return s.t(C.union(shapes.map(r=>s.t(C.ofPolygons(r,'EvenOdd')))));};
@@ -12,7 +16,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const fillHoles=(c:CrossSection)=>s.t(C.union(c.toPolygons().map(r=>s.t(C.ofPolygons([r],'EvenOdd')))));
  const extra=design.extra?s.t(s.t(fit(design.extra,p.extraSize,p.extraSize).rotate(p.extraAngle)).translate([p.extraX,p.extraY])):null;
  let base:CrossSection;
- if(p.model==='name') {
+ if(nameOnly) {
  if(!design.main)throw new Error('Scrivi un nome.');
  const text=s.t(fit(design.main,p.width,p.depth-10).scale(p.scale/100).rotate(p.angle).translate([p.x,p.y]));const combined=extra?s.t(text.add(extra)):text;base=fillHoles(s.t(combined.offset(p.border,'Round',2,48)));
  const islands=base.decompose().map(a=>s.t(a)).sort((a,b)=>b.area()-a.area());
@@ -21,7 +25,16 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  for(const a of joined.toPolygons().flat())for(const b of island.toPolygons().flat()){const d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d<distance){distance=d;aa=a;bb=b;}}
  const ends=[aa,bb].map(at=>s.t(s.t(C.circle(1,32)).translate(at)));joined=s.t(s.t(joined.add(island)).add(s.t(C.hull(ends))));}
  base=fillHoles(joined);}
- }else if(p.model==='initial' && p.shape==='svg') {if(!design.initial)throw new Error('Inserisci un’iniziale.');base=s.t(fit(design.initial,p.width,p.depth).offset(p.border,'Round',2,48));const islands=base.decompose().map(a=>s.t(a));if(islands.length>1)base=s.t(C.hull(islands));}
+ }else if(p.model==='initial' && p.shape==='svg') {
+ if(!design.initial)throw new Error('Inserisci un’iniziale.');
+ // La lettera è il corpo stampabile. Le scritte e i simboli mantengono tutto il loro contorno.
+ base=fit(design.initial,p.width,p.depth);
+ const additions:CrossSection[]=[];
+ if(design.main){const name=s.t(s.t(fit(design.main,p.width*.9*p.scale/100,p.depth*.3*p.scale/100).rotate(p.angle)).translate([p.x,p.y]));additions.push(fillHoles(s.t(name.offset(p.border,'Round',2,48))));}
+ if(extra)additions.push(fillHoles(s.t(extra.offset(p.border,'Round',2,48))));
+ for(const addition of additions){const islands=addition.decompose().map(a=>s.t(a));for(const island of islands){const combined=s.t(base.add(island));if(combined.decompose().map(a=>s.t(a)).length>1){let aa:[number,number]=[0,0],bb:[number,number]=[0,0],distance=Infinity;for(const a of base.toPolygons().flat())for(const b of island.toPolygons().flat()){const d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d<distance){distance=d;aa=a;bb=b;}}const ends=[aa,bb].map(at=>s.t(s.t(C.circle(1,32)).translate(at)));base=s.t(combined.add(s.t(C.hull(ends))));}else base=combined;}}
+ const islands=base.decompose().map(a=>s.t(a));if(islands.length>1)base=s.t(C.hull(islands));
+ }
  else if(p.model==='svg' && p.shape==='svg') {if(!design.main)throw new Error('Carica un SVG.');base=fit({...design.main,shapes:design.main.filledShapes??[]},p.width,p.depth);if(base.decompose().map(a=>s.t(a)).length!==1)throw new Error('La sagoma SVG deve essere una sola forma connessa.');}
  else if(p.model==='jersey')base=s.t(s.t(C.ofPolygons([[[-.3,-.5],[.3,-.5],[.3,.1],[.48,0],[.6,.25],[.27,.5],[.12,.5],[.08,.4],[-.08,.4],[-.12,.5],[-.27,.5],[-.6,.25],[-.48,0],[-.3,.1]]])).scale([p.width/1.2,p.depth]));
  else if(p.shape==='heart')base=s.t(C.ofPolygons([Array.from({length:160},(_,i)=>{const t=i*2*Math.PI/160;return [Math.pow(Math.sin(t),3)*p.width/2,(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*p.depth/32] as [number,number];})],'EvenOdd'));
@@ -31,7 +44,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const shirt=base;
  let bb=base.bounds();
  if(p.model==='jersey'&&p.loop){base=s.t(base.add(s.t(s.t(C.square([p.hole+5,p.depth*.2],true)).translate([0,bb.max[1]-p.depth*.1]))));}
- bb=base.bounds();let cx=p.model==='name'?bb.min[0]+Math.min(7,(bb.max[0]-bb.min[0])/3):p.shape==='heart'?p.width*.27:(bb.min[0]+bb.max[0])/2;
+ bb=base.bounds();let cx=nameOnly?bb.min[0]+Math.min(7,(bb.max[0]-bb.min[0])/3):p.shape==='heart'?p.width*.27:(bb.min[0]+bb.max[0])/2;
  let edgeY=-Infinity;
  for(const polygon of base.toPolygons())for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length];if(a[0]!==b[0]&&cx>=Math.min(a[0],b[0])&&cx<=Math.max(a[0],b[0]))edgeY=Math.max(edgeY,a[1]+(b[1]-a[1])*(cx-a[0])/(b[0]-a[0]));}
  if(!Number.isFinite(edgeY)){const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];cx=top[0];edgeY=top[1];}
@@ -72,7 +85,11 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  decorate(design.team,p.width*.44,p.teamSize,0,p.depth*p.teamY/100,'Squadra',p.mode,p.artColor,true);
  }
 
- else {if(p.model==='initial')decorate(design.initial,p.width*.65,p.depth*.72,0,0,'Iniziale','inlay',p.initialColor);decorate(design.main,p.width*p.scale/100,(p.model==='name'?p.depth-10:p.depth*.6)*p.scale/100,p.x,p.y,'Decorazione');}
+ else {
+ if(hasInitial&&p.shape!=='svg')decorate(design.initial,p.width*.65,p.depth*.72,0,0,'Iniziale',p.mode,p.initialColor);
+ const letterBody=hasInitial&&p.shape==='svg';
+ decorate(design.main,p.width*(letterBody?.9:1)*p.scale/100,(nameOnly?p.depth-10:letterBody?p.depth*.3:p.depth*.6)*p.scale/100,p.x,p.y,'Decorazione');
+ }
  if(extra){if(p.model==='qr'&&s.t(extra.intersect(s.t(field.subtract(extraField)))).area()>.01)throw new Error('SVG o icona invade il margine del QR: spostalo fuori dal codice.');decorate(design.extra,p.extraSize,p.extraSize,p.extraX,p.extraY,'Simbolo',p.mode,p.extraColor,false,p.extraAngle);}
  for(const decoration of decorations)for(const [i,item]of decoration.solid.decompose().map(a=>s.t(a)).entries())if(!item.isEmpty()&&item.volume()>1e-5)parts.push({id:`${decoration.id}-${i}`,name:`${decoration.id} ${i+1}`,color:decoration.color,mesh:toMeshData(item)});
 

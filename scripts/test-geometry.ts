@@ -519,6 +519,17 @@ for(const model of ['name','initial','svg','qr','jersey','music'] as const)for(c
  for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.001)fail(`keychain/${model}: pezzi sovrapposti`);hit.delete();}
  solids.forEach(c=>c.delete());
 }
+// I campi vuoti escludono davvero gli elementi: nessuna scritta o lettera predefinita.
+for(const [text,initial] of [['','B'],['Nome',''],['Nome','B']])for(const shape of ['svg','round'] as const)for(const mode of ['relief','inlay','engrave'] as const){
+ runs++;const result=buildKeychain(M,{...CHAIN_DEFAULTS,model:'initial',text,initial,shape,mode},{main:chainArt,initial:chainArt});
+ if(!text&&result.parts.some(p=>p.id.startsWith('Decorazione')))fail('iniziale: nome vuoto genera scritte');
+ if(!initial&&result.parts.some(p=>p.id.startsWith('Iniziale')))fail('iniziale: lettera vuota genera una lettera');
+ if(!text&&shape==='svg'&&result.parts.length!==1)fail('iniziale: la lettera sola deve essere un corpo senza scritte');
+ const mounted=assemblySeats(M,result.parts);
+ for(const part of mounted){const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();const solid=new M.Manifold(mesh);if(solid.status()!=='NoError'||solid.volume()<=0)fail('iniziale: corpo non stampabile');solid.delete();}
+}
+try{buildKeychain(M,{...CHAIN_DEFAULTS,model:'initial',initial:' ',text:' '},{main:chainArt,initial:chainArt});fail('iniziale: campi vuoti accettati');}catch(e){if(!(e instanceof Error)||!e.message.includes('Scrivi una lettera'))throw e;}
+
 const badChain=sanitizeChain({...CHAIN_DEFAULTS,width:NaN,depth:Infinity,relief:100,baseColor:'bad'});
 if(badChain.width!==CHAIN_DEFAULTS.width||badChain.depth!==CHAIN_DEFAULTS.depth||badChain.relief>badChain.thickness-.8||badChain.baseColor!=='#ff4b16')fail('keychain: sanitize');
 
