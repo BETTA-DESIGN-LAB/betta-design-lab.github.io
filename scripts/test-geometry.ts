@@ -20,6 +20,8 @@ import { printPart as printKeycapPart, printAssembly as printKeycapAssembly } fr
 import { build as buildKeychain } from '../apps/keychain/src/geometry.ts';
 import { DEFAULTS as CHAIN_DEFAULTS, sanitize as sanitizeChain } from '../apps/keychain/src/params.ts';
 import { qrArtwork } from '../apps/keychain/src/artwork.ts';
+import { build as buildChristmas, printParts as printChristmas } from '../apps/christmas/src/geometry.ts';
+import { DEFAULTS as CHRISTMAS_DEFAULTS, sanitize as sanitizeChristmas } from '../apps/christmas/src/params.ts';
 const M = await loadManifold();
 let failures = 0;
 let runs = 0;
@@ -574,5 +576,17 @@ for(const ringType of ['external','internal'] as const){runs++;const q=qrArtwork
  const cases=[buildCoaster(M,{...DEFAULTS,svgUse:'decoration',patternMode:'relief'},chainArt).parts,buildKeycap(M,{...KEYCAP_DEFAULTS,mode:'relief'},chainArt).parts,...(['front','back','left','right','lid'] as const).map(face=>buildBox(M,{...boxDefaults,ribbed:false},[{id:1,face,mode:'relief',size:15,u:0,v:0,angle:0,depth:.8,color:'#ffffff',artwork:chainArt}]).parts)];
  for(const original of cases){runs++;const seated=assemblySeats(M,original),a=original.map(solid),b=seated.map(solid);if(!a.some((part,i)=>part.volume()-b[i].volume()>.1))fail('sedi: supporto senza solco');if(b.some(part=>part.status()!=='NoError'||part.volume()<=0))fail('sedi: supporto o inserto invalido');const before=M.Manifold.union(a),after=M.Manifold.union(b);if(Math.abs(before.volume()-after.volume())>.1)fail('sedi: sagoma assemblata differente');before.delete();after.delete();[...a,...b].forEach(p=>p.delete());}
 }
+
+// Natale: continuità del corpo, incastri senza collisioni, sedi e colori separati.
+{
+ const solid=(part:import('@bdl/geometry').Part)=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+ const check=(parts:import('@bdl/geometry').Part[],label:string)=>{const solids=parts.map(solid);for(const m of solids)if(m.status()!=='NoError'||m.volume()<=1e-5)fail(label+': mesh invalida');for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.01)fail(label+': colori/parti in collisione '+parts[i].id+' / '+parts[j].id+' ('+hit.volume()+')');hit.delete();}for(const m of solids.slice(0,label.startsWith('sfera')?2:1)){const c=m.decompose();if(c.length!==1)fail(label+': corpo scollegato');c.forEach(x=>x.delete());}solids.forEach(x=>x.delete());};
+ for(const shape of ['bauble','tree','star','snowflake','heart','bell','gingerbread'] as const)for(const style of ['solid','outline','snow'] as const)for(const mode of ['relief','inlay','engrave'] as const){runs++;const p={...CHRISTMAS_DEFAULTS,shape,style,mode,extraX:12,extraY:-10,extraSize:10};const d={text:chainArt,extra:chainArt};check(buildChristmas(M,p,d).parts,'piatto/'+shape+'/'+style+'/'+mode);check(buildChristmas(M,p,d,true).parts,'piatto/sedi');}
+ for(const profile of ['smooth','wave','spiral'] as const)for(const mode of ['relief','inlay','engrave'] as const)for(const size of [35,75,160]){runs++;const p={...CHRISTMAS_DEFAULTS,model:'sphere' as const,profile,mode,size,wall:size===35?1.2:1.8,extraSize:6,extraY:-size*.23};const d={text:chainArt,extra:chainArt};check(buildChristmas(M,p,d).parts,'sfera/'+profile+'/'+mode+'/'+size);const printed=printChristmas(buildChristmas(M,p,d,true).parts);for(const part of printed){const m=solid(part);if(m.status()!=='NoError'||m.volume()<=0)fail('sfera: pezzi separati invalidi');m.delete();}}
+ runs++;const clean=buildChristmas(M,{...CHRISTMAS_DEFAULTS,text:'',loop:false}).parts;if(clean.length!==1)fail('Natale: scritta vuota non esclusa');
+ const p=sanitizeChristmas({...CHRISTMAS_DEFAULTS,ribs:15,size:NaN,wall:Infinity,baseColor:'bad'});if(p.ribs%2||p.size!==75||p.wall!==1.8||p.baseColor!=='#ff4b16')fail('Natale: sanitizzazione');
+ const files=unzipSync(to3MF(buildChristmas(M,CHRISTMAS_DEFAULTS,{text:chainArt}).parts,{title:'Natale'}));if(!files['3D/3dmodel.model'])fail('Natale: export 3MF');
+}
+
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);

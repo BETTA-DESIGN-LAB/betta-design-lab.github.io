@@ -9,6 +9,13 @@
       "blurb": "Sottobicchieri tondi, quadrati o esagonali con bordo rialzato e motivo in rilievo a due colori."
     },
     {
+      "id": "christmas",
+      "name": "Natale",
+      "status": "beta",
+      "category": "Arredo",
+      "blurb": "Palline sferiche a onda e spirale, ornamenti piatti e sagome natalizie con nomi, SVG e icone."
+    },
+    {
       "id": "keychain",
       "name": "Portachiavi",
       "status": "beta",

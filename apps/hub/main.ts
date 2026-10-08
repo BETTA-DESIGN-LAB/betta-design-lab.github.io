@@ -9,6 +9,7 @@ interface Entry { id: string; name: string; status: 'live' | 'beta' | 'planned';
 // Icone editoriali piatte: oggetti riconoscibili, senza viste tecniche o quote.
 const a = (d: string) => `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ART: Record<string, string> = {
+  christmas: a('<circle cx="32" cy="37" r="20"/><rect x="25" y="12" width="14" height="7" rx="2"/><path d="M28 12V8a4 4 0 0 1 8 0v4M32 26v22M23 31l18 12M23 43l18-12"/>'),
   coaster: a('<circle cx="32" cy="32" r="23"/><circle cx="32" cy="32" r="16"/><path d="M25 33c0-9 14-9 14 0M28 40h8"/>'),
   keychain: a('<circle cx="21" cy="21" r="11"/><path d="M29 29l8-8 18 18-16 16-18-18z"/><circle cx="37" cy="35" r="2"/>'),
   keycap: a('<rect x="10" y="10" width="44" height="44" rx="14"/><rect x="19" y="19" width="26" height="26" rx="8"/><path d="M27 32h10M32 27v10"/>'),

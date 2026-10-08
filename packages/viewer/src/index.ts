@@ -10,7 +10,10 @@ import type { Part } from '@bdl/geometry';
 export interface ViewerOptions {
   /** Lato del piatto in mm (default 256, Bambu X1/P1/A1). */
   plateSize?: number;
+  fitPlate?: () => boolean;
   canMovePart?: (id: string) => boolean;
+  /** Fronte XZ per decorazioni su oggetti verticali; il piatto resta XY. */
+  movePlane?: () => 'xy' | 'xz';
   onMovePart?: (id: string, dx: number, dy: number) => void;
   onSelectPart?: (id: string | null) => void;
 }
@@ -105,7 +108,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     ray.setFromCamera(new THREE.Vector2(2*(event.clientX-rect.left)/rect.width-1,1-2*(event.clientY-rect.top)/rect.height),camera);
     return ray;
   };
-  const floorPoint = (event:PointerEvent) => rayAt(event).ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,0,1),0),new THREE.Vector3());
+  const floorPoint = (event:PointerEvent) => rayAt(event).ray.intersectPlane(new THREE.Plane(opts.movePlane?.()==='xz'?new THREE.Vector3(0,1,0):new THREE.Vector3(0,0,1),0),new THREE.Vector3());
   const onDown = (event:PointerEvent) => {
     if(event.button!==0)return;
     pointerStart=[event.clientX,event.clientY];
@@ -128,7 +131,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     if(dragging){
       event.stopImmediatePropagation();const d=dragging;dragging=null;controls.enabled=true;
       if(renderer.domElement.hasPointerCapture(event.pointerId))renderer.domElement.releasePointerCapture(event.pointerId);
-      const dx=d.mesh.position.x-d.origin.x,dy=d.mesh.position.y-d.origin.y;
+      const dx=d.mesh.position.x-d.origin.x,dy=opts.movePlane?.()==='xz'?d.mesh.position.z-d.origin.z:d.mesh.position.y-d.origin.y;
       if(Math.hypot(dx,dy)>0.01)opts.onMovePart?.(d.mesh.name,dx,dy);
       return;
     }
@@ -162,7 +165,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
 
   const box = () => {
     const b = new THREE.Box3().setFromObject(model);
-    if (moveEnabled) b.union(new THREE.Box3().setFromObject(plateGroup));
+    if (moveEnabled && opts.fitPlate?.()!==false) b.union(new THREE.Box3().setFromObject(plateGroup));
     if (b.isEmpty()) b.set(new THREE.Vector3(-40, -40, 0), new THREE.Vector3(40, 40, 10));
     return b;
   };
