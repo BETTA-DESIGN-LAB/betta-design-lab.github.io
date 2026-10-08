@@ -10,6 +10,7 @@ import type { Part } from '@bdl/geometry';
 export interface ViewerOptions {
   /** Lato del piatto in mm (default 256, Bambu X1/P1/A1). */
   plateSize?: number;
+  canMovePart?: (id: string) => boolean;
   onMovePart?: (id: string, dx: number, dy: number) => void;
   onSelectPart?: (id: string | null) => void;
 }
@@ -110,7 +111,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     pointerStart=[event.clientX,event.clientY];
     if(!moveEnabled || !opts.onMovePart)return;
     const hit=rayAt(event).intersectObjects(model.children,false)[0], start=floorPoint(event);
-    if(!hit || !start)return;
+    if(!hit || !start || opts.canMovePart?.(hit.object.name)===false)return;
     event.stopImmediatePropagation();event.preventDefault();controls.enabled=false;
     dragging={mesh:hit.object,start,origin:hit.object.position.clone(),pointer:event.pointerId};
     renderer.domElement.setPointerCapture(event.pointerId);

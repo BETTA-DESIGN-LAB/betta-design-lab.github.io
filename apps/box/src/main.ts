@@ -1,6 +1,7 @@
+let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { loadManifold, type Part } from '@bdl/geometry';
+import { assemblySeats, loadManifold, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { toSTL, to3MF, download } from '@bdl/export';
 import { zipSync } from 'fflate';
@@ -29,12 +30,12 @@ function range(key: keyof Params, label: string, min: number, max: number, step 
   const c = slider({ label, min, max, step, unit, value: Number(state[key]), onInput: (v) => set(key, v) }); controls.push(() => c.set(Number(state[key]))); return c.root;
 }
 const pieceList = el('div', { class: 'bdl-row', role: 'group', 'aria-label': 'Pezzi della scatola' });
-const singleSTL = button({ label: 'STL del pezzo selezionato', onClick: () => { const part = parts.find((p) => p.id === selected); if (part) download(toSTL([printable(part)]), `scatola-${part.id}.stl`, 'model/stl'); } });
+const singleSTL = button({ label: 'STL del pezzo selezionato', onClick: () => { const part = mountParts.find((p) => p.id === selected); if (part) download(toSTL([printable(part)]), `scatola-${part.id}.stl`, 'model/stl'); } });
 singleSTL.disabled = true;
 function placement(id = selected): Placement | undefined {
   if(pinned[id]) return pinned[id];
   const index=layout.plates.findIndex(items=>items.some(p=>p.id===id)), part=layout.plates[index]?.find(p=>p.id===id);
-  const source=parts.find(p=>p.id===id);
+  const source=mountParts.find(p=>p.id===id);
   return part && source ? currentPlacement(part,source,index) : undefined;
 }
 function move(patch: Partial<Placement>) { const p=placement();if(p && selected){pinned[selected]={...p,...patch}; refreshLayout(false);} }
@@ -85,7 +86,7 @@ const loadProject = el('input', {class:'bdl-input',type:'file',accept:'.json','a
 loadProject.addEventListener('change', async()=>{const file=loadProject.files?.[0];if(!file)return;try{if(file.size>10000000)throw new Error('Progetto troppo grande');const data=JSON.parse(await file.text());if(data.version!==1)throw new Error('Progetto non compatibile');const next=validateDecorations(data.decorations), positions=validatePlacements(data.placements);state=sanitize(data.params);decorations=next;pinned=positions;controls.forEach(c=>c());editor.sync();schedule();}catch(e){toast(e instanceof Error?e.message:String(e));}loadProject.value='';});
 shell.panel.append(section('Apri progetto salvato',loadProject));
 const exports = [
-  button({ label: 'STL separati (ZIP)', onClick: () => { const files: Record<string, Uint8Array> = {}; for (const p of parts) files[`scatola-${p.id}.stl`] = toSTL([printable(p)]); download(zipSync(files), 'scatola-stl.zip', 'application/zip'); } }),
+  button({ label: 'STL separati (ZIP)', onClick: () => { const files: Record<string, Uint8Array> = {}; for (const p of mountParts) files[`scatola-${p.id}.stl`] = toSTL([printable(p)]); download(zipSync(files), 'scatola-stl.zip', 'application/zip'); } }),
   button({ label: '3MF · tutti i piatti', variant: 'primary', onClick: () => {
     if (layout.oversized.length || layout.warnings.length) {toast('Controlla i pezzi fuori dal piatto o gli ingombri sovrapposti prima di esportare.');return;}
     const files: Record<string, Uint8Array> = {};
@@ -100,7 +101,7 @@ function show(refit = true) { viewer.setMoveEnabled(view==='print' && moving); v
 shell.panel.inert = true;
 const M = await loadManifold(wasmUrl); shell.panel.inert = false;
 function refreshLayout(refit = false) {
-  layout=arrange(parts,state.plateWidth,state.plateDepth,pinned);
+  layout=arrange(mountParts,state.plateWidth,state.plateDepth,pinned);
   plate=Math.min(plate,Math.max(0,layout.plates.length-1));
   if(selected && pinned[selected] && parts.some(p=>p.id===selected))plate=pinned[selected].plate;
   plateSelect.replaceChildren(...layout.plates.map((_,i)=>el('option',{value:String(i)},`Piatto ${i+1} di ${layout.plates.length}`)));plateSelect.value=String(plate);
@@ -112,7 +113,7 @@ function refreshLayout(refit = false) {
 }
 function rebuild() {
   try {
-    const result=buildBox(M,state,decorations);parts=result.parts;geometryWarnings=result.warnings;
+    const result=buildBox(M,state,decorations);parts=result.parts;mountParts=assemblySeats(M,parts);geometryWarnings=result.warnings;
     pieceList.replaceChildren(...parts.map(p=>{const b=button({label:p.name,size:'sm',onClick:()=>select(p.id)});b.dataset.part=p.id;return b;}));
     exports.forEach(b=>b.disabled=false); refreshLayout(true);writeHashState(state,DEFAULTS);
   }catch(error){parts=[];viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}

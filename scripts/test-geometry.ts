@@ -2,7 +2,7 @@
 // e verifica che i pezzi siano solidi chiusi (manifold), non vuoti e nelle misure attese.
 // Gira in CI e in locale con `pnpm test`.
 
-import { loadManifold } from '@bdl/geometry';
+import { assemblySeats, loadManifold } from '@bdl/geometry';
 import { buildCoaster } from '../apps/coaster/src/geometry.ts';
 import { DEFAULTS, sanitize as sanitizeCoaster, type CoasterParams } from '../apps/coaster/src/params.ts';
 import { buildVase } from '../apps/vase/src/geometry.ts';
@@ -17,6 +17,9 @@ import { DEFAULTS as KEYCAP_DEFAULTS, sanitize as sanitizeKeycap } from '../apps
 import { traceRaster } from '../apps/keycap/src/artwork.ts';
 import { printPart as printKeycapPart, printAssembly as printKeycapAssembly } from '../apps/keycap/src/parts.ts';
 
+import { build as buildKeychain } from '../apps/keychain/src/geometry.ts';
+import { DEFAULTS as CHAIN_DEFAULTS, sanitize as sanitizeChain } from '../apps/keychain/src/params.ts';
+import { qrArtwork } from '../apps/keychain/src/artwork.ts';
 const M = await loadManifold();
 let failures = 0;
 let runs = 0;
@@ -503,5 +506,62 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
   }
 }
 
+
+// Portachiavi: forma, tecniche, foro passante, componenti e QR con margine.
+const chainArt={name:'Test',shapes:[[[[-.4,-.15],[.4,-.15],[.4,.15],[-.4,.15]]]],filledShapes:[[[[-.4,-.15],[.4,-.15],[.4,.15],[-.4,.15]]]]} as import('../apps/coaster/src/svg.ts').SvgArtwork;
+for(const model of ['name','initial','svg','qr','jersey','music'] as const)for(const mode of ['relief','inlay','engrave'] as const)for(const shape of ['square','round','svg'] as const){
+ runs++;const q=qrArtwork('https://example.com/è');const p=sanitizeChain({...CHAIN_DEFAULTS,model,mode,shape});
+ const result=buildKeychain(M,p,{main:model==='qr'?q.artwork:chainArt,initial:chainArt,number:chainArt,team:chainArt,qrModules:q.modules,cover:chainArt});
+ const solids=result.parts.map(part=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);});
+ for(const solid of solids)if(solid.status()!=='NoError'||solid.volume()<=0)fail(`keychain/${model}/${mode}/${shape}: mesh invalida`);
+ const base=solids[0],components=base.decompose();if(components.length!==1)fail(`keychain/${model}: base scollegata`);components.forEach(c=>c.delete());
+ if(Math.abs(base.boundingBox().min[2])>.001)fail('keychain: base sollevata');
+ for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.001)fail(`keychain/${model}: pezzi sovrapposti`);hit.delete();}
+ solids.forEach(c=>c.delete());
+}
+const badChain=sanitizeChain({...CHAIN_DEFAULTS,width:NaN,depth:Infinity,relief:100,baseColor:'bad'});
+if(badChain.width!==CHAIN_DEFAULTS.width||badChain.depth!==CHAIN_DEFAULTS.depth||badChain.relief>badChain.thickness-.8||badChain.baseColor!=='#ff4b16')fail('keychain: sanitize');
+
+
+for(const jerseyPattern of ['solid','vertical','horizontal','half','diagonal','broad','sides'])for(const mode of ['relief','inlay','engrave'] as const)for(const loop of [true,false]){
+ runs++;const result=buildKeychain(M,{...CHAIN_DEFAULTS,model:'jersey',width:45,depth:60,jerseyPattern,mode,loop,textOutline:true},{main:chainArt,number:chainArt,team:chainArt});
+ const solids=result.parts.map(part=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);});
+ for(const m of solids)if(m.status()!=='NoError'||m.volume()<=0)fail('jersey: geometria non valida');
+ for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.001)fail('jersey: colori sovrapposti');hit.delete();}
+ solids.forEach(m=>m.delete());
+}
+
+// Maglia con molte lettere curve: le sedi vengono sottratte tutte insieme.
+{
+ const circle=M.CrossSection.circle(.025,32),hole=M.CrossSection.circle(.012,32),letter=circle.subtract(hole);
+ const contours=Array.from({length:12},(_,i)=>{const c=letter.translate([(i-5.5)*.075,0]);const poly=c.toPolygons();c.delete();return poly;});letter.delete();hole.delete();circle.delete();
+ const text={name:'Lettere curve',shapes:contours};
+ for(const jerseyPattern of ['vertical','horizontal','sides']){runs++;const original=buildKeychain(M,{...CHAIN_DEFAULTS,model:'jersey',width:45,depth:60,jerseyPattern},{main:text,number:text,team:text}).parts;const mounted=assemblySeats(M,original);for(const p of mounted){const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();const m=new M.Manifold(mesh);if(m.status()!=='NoError'||m.volume()<=0)fail('maglia: sedi non valide con molte lettere');m.delete();}}
+}
+
+// Sedi: sottrazione alla base compensata dall’inserto, senza cambiare la sagoma montata.
+for(const mode of ['relief','inlay'] as const){
+ const original=buildKeychain(M,{...CHAIN_DEFAULTS,model:'name',mode,loop:false},{main:chainArt,extra:chainArt}).parts;
+ const seated=assemblySeats(M,original);runs++;
+ const solid=(p:typeof original[number])=>{const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+ const before=original.map(solid),after=seated.map(solid);
+ if(after.some(p=>p.status()!=='NoError'))fail('sedi: mesh non valida');
+ if(Math.abs(before.reduce((v,p)=>v+p.volume(),0)-after.reduce((v,p)=>v+p.volume(),0))>.01)fail('sedi: volume montato cambiato');
+ if(mode==='relief'&&before[0].volume()-after[0].volume()<1)fail('sedi: solco mancante');
+ if(mode==='inlay'&&Math.abs(before[0].volume()-after[0].volume())>.01)fail('sedi: intarsio già incassato modificato');
+ for(let i=0;i<after.length;i++)for(let j=i+1;j<after.length;j++){const hit=after[i].intersect(after[j]);if(hit.volume()>.001)fail('sedi: pezzi sovrapposti');hit.delete();}
+ [...before,...after].forEach(p=>p.delete());
+}
+for(const shape of ['square','round','oval','hex','heart'] as const)for(const ringType of ['external','internal'] as const){runs++;const q=qrArtwork('https://example.com');const result=buildKeychain(M,{...CHAIN_DEFAULTS,model:'qr',width:60,depth:60,shape,ringType,qrSize:shape==='heart'?40:60,qrY:shape==='heart'?-4:0},{main:q.artwork,qrModules:q.modules});if(result.parts.length<2)fail('QR: forma senza codice');}
+for(const ringType of ['external','internal'] as const){runs++;const q=qrArtwork('https://example.com');buildKeychain(M,{...CHAIN_DEFAULTS,model:'qr',width:45,depth:45,shape:'heart',ringType,qrSize:35,qrY:-2.7},{main:q.artwork,qrModules:q.modules});}
+// La base di una lettera con foro deve essere piena, anche con un simbolo vicino.
+{runs++;const ring:import('../apps/coaster/src/svg.ts').SvgArtwork={name:'O',shapes:[[[[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]],[[-.2,-.2],[-.2,.2],[.2,.2],[.2,-.2]]]]};const result=buildKeychain(M,{...CHAIN_DEFAULTS,model:'name',loop:false,x:12,y:3,angle:25},{main:ring,extra:chainArt});const mesh=new M.Mesh({numProp:3,vertProperties:result.parts[0].mesh.positions,triVerts:result.parts[0].mesh.indices});mesh.merge();const base=new M.Manifold(mesh),probe=M.Manifold.cube([1,1,1],true).translate([12,3,1]);const hit=base.intersect(probe);if(hit.volume()<.99)fail('nome: foro interno alla base');hit.delete();probe.delete();base.delete();}
+
+{
+ const solid=(part:import('@bdl/geometry').Part)=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+ const {buildBox}=await import('../apps/box/src/geometry.ts');const {DEFAULTS:boxDefaults}=await import('../apps/box/src/params.ts');
+ const cases=[buildCoaster(M,{...DEFAULTS,svgUse:'decoration',patternMode:'relief'},chainArt).parts,buildKeycap(M,{...KEYCAP_DEFAULTS,mode:'relief'},chainArt).parts,...(['front','back','left','right','lid'] as const).map(face=>buildBox(M,{...boxDefaults,ribbed:false},[{id:1,face,mode:'relief',size:15,u:0,v:0,angle:0,depth:.8,color:'#ffffff',artwork:chainArt}]).parts)];
+ for(const original of cases){runs++;const seated=assemblySeats(M,original),a=original.map(solid),b=seated.map(solid);if(!a.some((part,i)=>part.volume()-b[i].volume()>.1))fail('sedi: supporto senza solco');if(b.some(part=>part.status()!=='NoError'||part.volume()<=0))fail('sedi: supporto o inserto invalido');const before=M.Manifold.union(a),after=M.Manifold.union(b);if(Math.abs(before.volume()-after.volume())>.1)fail('sedi: sagoma assemblata differente');before.delete();after.delete();[...a,...b].forEach(p=>p.delete());}
+}
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);

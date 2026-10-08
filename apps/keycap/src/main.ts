@@ -1,6 +1,7 @@
+let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { loadManifold, bounds, type Part } from '@bdl/geometry';
+import { assemblySeats, loadManifold, bounds, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { toSTL, to3MF, download, slug } from '@bdl/export';
 import { zipSync } from 'fflate';
@@ -63,7 +64,7 @@ const partColor = colorPicker({ label: 'Colore pezzo selezionato', value: state.
   colors[selected] = color; schedule();
 } });
 const selectedSTL = button({ label: 'STL selezionato', onClick: () => {
-  const part = parts.find((item) => item.id === selected);
+  const part = mountParts.find((item) => item.id === selected);
   if (part) download(toSTL([printPart(part)]), `${slug(part.name)}.stl`, 'model/stl');
 } });
 selectedSTL.disabled = true;
@@ -185,7 +186,7 @@ function select(id: string) {
   for (const node of list.querySelectorAll('button')) node.setAttribute('aria-pressed', String(node.dataset.part === selected));
 }
 function show() {
-  shown = view === 'assembled' ? parts : separateParts(parts.map(printPart));
+  shown = view === 'assembled' ? parts : separateParts(mountParts.map(printPart));
   viewer.setParts(shown); select(selected);
 }
 shell.panel.inert = true;
@@ -204,7 +205,7 @@ function rebuild() {
     });
     const result = buildKeycap(M, state, artwork, lettering);
     if (state.mode === 'relief' && (artwork || lettering.some(Boolean))) result.warnings.push('Rilievo: valuta i supporti nel programma di stampa. Per stampare a faccia in giù senza dislivelli scegli intarsio.');
-    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color }));
+    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); mountParts = assemblySeats(M, parts);
     list.replaceChildren(...parts.map((part) => {
       const b = button({ label: part.name, size: 'sm', onClick: () => select(part.id) }); b.dataset.part = part.id; return b;
     }));
@@ -218,7 +219,7 @@ function rebuild() {
 }
 const exports = [
   button({ label: 'STL separati (ZIP)', onClick: () => {
-    const files: Record<string, Uint8Array> = {}; for (const part of parts) files[`${slug(part.name)}.stl`] = toSTL([printPart(part)]);
+    const files: Record<string, Uint8Array> = {}; for (const part of mountParts) files[`${slug(part.name)}.stl`] = toSTL([printPart(part)]);
     download(zipSync(files), 'clicker-stl.zip', 'application/zip');
   } }),
   button({ label: '3MF di stampa', variant: 'primary', onClick: () => download(to3MF(printAssembly(parts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf') }),

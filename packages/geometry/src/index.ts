@@ -125,3 +125,5 @@ export function outline(
       return s.t(CrossSection.ofPolygons([regularPolygon(8, size)]));
   }
 }
+
+export { assemblySeats } from './seats.ts';

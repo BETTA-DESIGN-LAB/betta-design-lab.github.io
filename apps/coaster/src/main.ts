@@ -1,6 +1,7 @@
+let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { loadManifold, bounds, type Part } from '@bdl/geometry';
+import { assemblySeats, loadManifold, bounds, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { zipSync } from 'fflate';
 import { groundPart, separateParts } from './parts.ts';
@@ -136,19 +137,19 @@ const showCork = () => { corkDepthRow.root.hidden = !state.corkRecess; };
 const partList = el('div', { class: 'bdl-row', role: 'group', 'aria-label': 'Pezzi del modello' });
 const selectionLabel = el('p', { class: 'bdl-hint', role: 'status' }, 'Clicca un pezzo nell’anteprima oppure nell’elenco.');
 const selectedExport = button({ label: 'STL selezionato', size: 'sm', onClick: () => {
-  const part = parts.find((part) => part.id === selectedPart);
+  const part = mountParts.find((part) => part.id === selectedPart);
   if (part) download(toSTL([groundPart(part)]), `${fileBase()}-${slug(part.name)}.stl`, 'model/stl');
 } });
 const separateExport = button({ label: 'Tutti gli STL separati (ZIP)', size: 'sm', onClick: () => {
   const files: Record<string, Uint8Array> = {};
-  parts.forEach((part) => { files[`${slug(part.name)}-${part.id}.stl`] = toSTL([groundPart(part)]); });
+  mountParts.forEach((part) => { files[`${slug(part.name)}-${part.id}.stl`] = toSTL([groundPart(part)]); });
   download(zipSync(files), `${fileBase()}-pezzi.zip`, 'application/zip');
 } });
 const layoutSeg = segmented({ label: 'Vista pezzi', value: 'assembled', options: [
   { value: 'assembled', label: 'Assemblata' }, { value: 'separated', label: 'Separata' },
 ], onChange: (value) => { separated = value === 'separated'; updatePreview(true); } });
 function updatePreview(refit = false) {
-  viewer.setParts(separated ? separateParts(parts) : parts, { refit });
+  viewer.setParts(separated ? separateParts(mountParts) : parts, { refit });
   viewer.selectPart(selectedPart);
 }
 function refreshPartList() {
@@ -209,7 +210,7 @@ showCorner(); showPatternRows(); showCork(); syncSvgControls(); refreshPartList(
 const fileBase = () => slug(`sottobicchiere-${state.shape}-${Math.round(state.size)}mm`);
 const exportButtons = [
   button({ label: 'STL', icon: ICONS.download, onClick: () => { download(toSTL(parts), `${fileBase()}.stl`, 'model/stl'); toast('STL scaricato (pezzi uniti, un colore)'); } }),
-  button({ label: '3MF multicolore', icon: ICONS.download, variant: 'primary', onClick: () => { download(to3MF(separated ? separateParts(parts) : parts, { title: fileBase() }), `${fileBase()}.3mf`, 'model/3mf'); toast('3MF scaricato: assegna un filamento a ogni pezzo nello slicer'); } }),
+  button({ label: '3MF multicolore', icon: ICONS.download, variant: 'primary', onClick: () => { download(to3MF(separated ? separateParts(mountParts) : parts, { title: fileBase() }), `${fileBase()}.3mf`, 'model/3mf'); toast('3MF scaricato: assegna un filamento a ogni pezzo nello slicer'); } }),
 ];
 exportButtons.forEach((b) => { b.disabled = true; });
 shell.exportBar.append(...exportButtons);
@@ -230,7 +231,7 @@ function rebuild() {
     const p = sanitize(state);
     const res = buildCoaster(M, p, artwork);
     if (!res.parts[0]?.mesh.indices.length) throw new Error('Geometria vuota.');
-    parts = res.parts;
+    parts = res.parts; mountParts = assemblySeats(M, parts);
     state = p;
     // Riposiziona la camera solo quando cambia l'ingombro, non a ogni slider.
     const key = `${p.svgUse}-${artwork?.name}-${p.shape}-${p.size}`;

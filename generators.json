@@ -11,9 +11,9 @@
     {
       "id": "keychain",
       "name": "Portachiavi",
-      "status": "planned",
+      "status": "beta",
       "category": "Accessori",
-      "blurb": "Portachiavi con nome, font e anello."
+      "blurb": "Portachiavi con nomi, iniziali, SVG, icone, QR e maglie personalizzate. Rilievi, intarsi e pezzi separati."
     },
     {
       "id": "keycap",
