@@ -146,7 +146,7 @@ const separateExport = button({ label: 'Tutti gli STL separati (ZIP)', size: 'sm
   download(zipSync(files), `${fileBase()}-pezzi.zip`, 'application/zip');
 } });
 let connectionWarnings:string[]=[];
-const connections=connectionPicker({value:()=>state.connection,active:()=>separated,available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
+const connections=connectionPicker({value:()=>state.connection,active:()=>separated,available:()=>parts.some(p=>p.id.startsWith('svg-'))&&hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
 const layoutSeg = segmented({ label: 'Vista pezzi', value: 'assembled', options: [
   { value: 'assembled', label: 'Assemblata' }, { value: 'separated', label: 'Separata' },
 ], onChange: (value) => { separated = value === 'separated'; updatePreview(true); } });
@@ -234,7 +234,7 @@ function rebuild() {
     const p = sanitize(state);
     const res = buildCoaster(M, p, artwork);
     if (!res.parts[0]?.mesh.indices.length) throw new Error('Geometria vuota.');
-    parts = res.parts; const connected=assemblyConnections(M,parts,p.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
+    parts = res.parts; const connected=parts.some(part=>part.id.startsWith('svg-'))?assemblyConnections(M,parts,p.connection):{parts,warnings:[]};mountParts=connected.parts;connectionWarnings=connected.warnings;
     state = p;
     // Riposiziona la camera solo quando cambia l'ingombro, non a ogni slider.
     const key = `${p.svgUse}-${artwork?.name}-${p.shape}-${p.size}`;

@@ -19,3 +19,5 @@ In ogni generatore che permette parti separabili, mostrare il controllo Collegam
 Aggiornamento degli altri tool autorizzato il 9 ottobre 2026: coaster, keychain, keycap e box usano il selettore condiviso per decorazioni; i connettori strutturali restano quelli del modello (MX, guide, code di rondine Gridfinity). Vase è un pezzo unico e non espone Collegamento.
 
 Precisazione utente: i collegamenti riguardano soltanto testi, SVG, icone e decorazioni separati da ricollocare sulla base. Escludere Fidget Clicker dal selettore e dai perni aggiuntivi; escludere la griglia Gridfinity, senza mostrare una sezione Collegamento per i suoi incastri nativi.
+
+Nei sottobicchieri escludere i pattern incorporati (pois, anelli, onde, griglie ecc.) dai collegamenti aggiuntivi e nascondere il selettore. Applicare sedi/perni soltanto alle decorazioni SVG separabili, incluse scritte convertite in tracciati, se la geometria lo permette. SVG usato solo come sagoma non abilita collegamenti per il pattern.

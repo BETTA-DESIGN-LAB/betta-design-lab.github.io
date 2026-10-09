@@ -61,3 +61,5 @@ Fidget Clicker e griglia Gridfinity non mostrano il selettore né ricevono perni
 ### Clicker da STL
 
 Forma → STL personalizzato importa un solido chiuso (ASCII o binario, millimetri, massimo 20 MB/150.000 triangoli). Il taglio orizzontale crea corpo inferiore con sede MX e parte superiore con socket a croce. Posizione XY, scala e altezza del taglio sono regolabili; l’anteprima premuta ricompone la superficie esterna, quella rilasciata mostra la corsa. La stampa conserva i due solidi; il progetto JSON conserva anche lo STL. Gli STL aperti e i tagli senza materiale sufficiente vengono rifiutati. Profilo MX nominale, corsa predefinita 4 mm: gli switch Fllyvly B0F223JY4P sono dichiarati compatibili MX ma senza disegno quotato; calibrare con una prova stampata.
+
+Nei sottobicchieri i pattern incorporati non ricevono sedi/perni aggiuntivi e non mostrano Collegamento. Il selettore è riservato alle decorazioni SVG separabili (anche scritte convertite in tracciati), con verifica automatica dello spazio disponibile; usare SVG come sola sagoma non abilita il selettore per i pattern.
