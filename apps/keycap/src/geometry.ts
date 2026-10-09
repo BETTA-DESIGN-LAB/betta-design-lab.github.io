@@ -8,6 +8,7 @@ import { readBlocks, blockOutline } from './blocks.ts';
  * Il fondo lascia spazio al corpo inferiore e ai pin, senza PCB o cablaggio. */
 export function buildKeycap(M: ManifoldToplevel, input: Params, artwork?: SvgArtwork, keyArtwork: readonly (SvgArtwork | undefined)[] = []): { parts: Part[]; warnings: string[] } {
   const p = sanitize(input), s = new Scope();
+  if(p.shape==='stl')throw new Error('Carica uno STL per creare il clicker.');
   if (p.shape === 'keys') return buildTextKeys(M, p, keyArtwork);
   const parts: Part[] = [], warnings: string[] = [];
   const plateZ = p.compact ? 9.3 : 10.3, capZ = plateZ + 7;

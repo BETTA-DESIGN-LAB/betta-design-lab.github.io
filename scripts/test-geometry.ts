@@ -12,6 +12,7 @@ import { groundPart, separateParts } from '../apps/coaster/src/parts.ts';
 import { bounds, type Part } from '@bdl/geometry';
 import { unzipSync, strFromU8 } from 'fflate';
 import { toSTL, to3MF } from '@bdl/export';
+import { parseSTL,buildSTLClicker } from '../apps/keycap/src/stl.ts';
 import { buildKeycap, buildFitTest } from '../apps/keycap/src/geometry.ts';
 import { DEFAULTS as KEYCAP_DEFAULTS, sanitize as sanitizeKeycap } from '../apps/keycap/src/params.ts';
 import { traceRaster } from '../apps/keycap/src/artwork.ts';
@@ -652,6 +653,25 @@ for(const mode of ['relief','inlay'] as const){
  runs++;const noArt=buildKeycap(M,KEYCAP_DEFAULTS).parts,untouched=assemblyConnections(M,noArt,'pins');if(hasConnectionArtwork(noArt)||untouched.parts.some((p,i)=>p.mesh.positions!==noArt[i].mesh.positions))fail('MX senza decorazione: geometria modificata');
  runs++;const thin={...chainArt,shapes:[[[[-.4,-.005],[.4,-.005],[.4,.005],[-.4,.005]]]]} as typeof chainArt;const tiny=assemblyConnections(M,buildKeychain(M,{...CHAIN_DEFAULTS,model:'name',mode:'relief'},{main:thin}).parts,'pins');if(!tiny.warnings.length)fail('Dettaglio sottile: manca ripiego sede');
 }
+
+// STL importato: quote a premuto, corsa libera, export e rifiuto dei tagli impossibili.
+for(const size of [32,45]){
+ runs++; const raw=M.Manifold.cube([size,size,40],true).translate([0,0,20]);
+ try{
+ const source:Part={id:'source',name:'STL prova',color:'#ffffff',mesh:importedMesh(raw)};
+ const binary=toSTL([source]);const mesh=parseSTL(binary.buffer.slice(binary.byteOffset,binary.byteOffset+binary.byteLength) as ArrayBuffer);
+ const ps={...KEYCAP_DEFAULTS,shape:'stl' as const,cutHeight:20};const result=buildSTLClicker(M,ps,mesh);
+ const from=(p:Part)=>{const mm=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mm.merge();return new M.Manifold(mm);};
+ const base=from(result.parts[0]),cap=from(result.parts[1]);
+ try{if(base.status()!=='NoError'||cap.status()!=='NoError')fail('STL solidi non validi');
+ const b=cap.boundingBox();if(Math.abs(b.max[2]-44)>.001)fail('STL quota rilasciata errata');
+ for(let dz=0;dz<=4;dz+=.25){const moved=cap.translate([0,0,-dz]),hit=base.intersect(moved);if(hit.volume()>.001)fail('STL interferenza nella corsa');hit.delete();moved.delete();}
+ if(!to3MF(result.parts,{title:'STL clicker'}).length)fail('STL export vuoto');
+ }finally{base.delete();cap.delete();}
+ for(const cutHeight of [5,38]){let rejected=false;try{buildSTLClicker(M,{...ps,cutHeight},mesh);}catch{rejected=true;}if(!rejected)fail('STL taglio impossibile accettato');}
+ }catch(e){fail('STL: '+String(e));}finally{raw.delete();}
+}
+function importedMesh(m:InstanceType<typeof M.Manifold>){const v=m.getMesh();return {positions:new Float32Array(v.vertProperties),indices:new Uint32Array(v.triVerts)};}
 
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);

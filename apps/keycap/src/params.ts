@@ -6,7 +6,7 @@ export interface Params {
   [key: string]: string | number | boolean;
   connection: 'auto'|'seat'|'pins';
   product: 'clicker' | 'keycap';
-  shape: 'square' | 'round' | 'hex' | 'artwork' | 'blocks' | 'keys';
+  shape: 'square' | 'round' | 'hex' | 'artwork' | 'blocks' | 'keys' | 'stl';
   keyLabels: string; keyLayout: 'horizontal' | 'vertical';
   blockData: string; switchX: number; switchY: number; loopAngle: number; loopHole: number;
   size: number; topThickness: number; decorationDepth: number; designScale: number;
@@ -14,10 +14,11 @@ export interface Params {
   gap: number; stemFit: number; socketFit: number; rim: number;
   switches: number; spacing: number; keychain: boolean;
   compact: boolean;
+  stlScale:number; cutHeight:number; mxTravel:number; mxCalibration:number;
   baseColor: string; capColor: string; artColor: string;
 }
 export const DEFAULTS: Params = { connection: 'auto',
-  product: 'clicker', shape: 'square', size: 35, topThickness: 1.6,
+  stlScale:1,cutHeight:20,mxTravel:4,mxCalibration:0, product: 'clicker', shape: 'square', size: 35, topThickness: 1.6,
   decorationDepth: 0.8, designScale: 75, mode: 'inlay', gap: 0.35,
   stemFit: 0.1, socketFit: 0.15, rim: 2.4, switches: 1, spacing: 20,
   keychain: false, compact: true, baseColor: '#25355e', capColor: '#f2f0eb', artColor: '#d4a429',
@@ -27,10 +28,11 @@ export const DEFAULTS: Params = { connection: 'auto',
 export function sanitize(input: Params): Params {
   const p = { ...DEFAULTS };p.connection=['auto','seat','pins'].includes(input.connection)?input.connection:'auto';
   for (const key of ['product', 'shape', 'mode'] as const) {
-    const choices = key === 'product' ? ['clicker', 'keycap'] : key === 'shape' ? ['square', 'round', 'hex', 'artwork', 'blocks', 'keys'] : ['inlay', 'relief', 'engrave'];
+    const choices = key === 'product' ? ['clicker', 'keycap'] : key === 'shape' ? ['square', 'round', 'hex', 'artwork', 'blocks', 'keys', 'stl'] : ['inlay', 'relief', 'engrave'];
     if (choices.includes(String(input[key]))) (p[key] as string) = input[key];
   }
   const limits: Record<string, [number, number]> = {
+    stlScale:[0.1,10],cutHeight:[1,300],mxTravel:[2,5],mxCalibration:[-1,1],
     size: [18, 100], topThickness: [1.2, 4], decorationDepth: [0.2, 2],
     designScale: [10, 100], gap: [0.15, 0.8], stemFit: [-0.1, 0.35],
     socketFit: [0, 0.5], rim: [0, 3], switches: [1, 3], spacing: [19, 30],
@@ -41,6 +43,7 @@ export function sanitize(input: Params): Params {
   }
   p.keyLabels = JSON.stringify(readKeyLabels(input.keyLabels));
   p.keyLayout = input.keyLayout === 'vertical' ? 'vertical' : 'horizontal';
+  if(p.shape==='stl'){p.product='clicker';p.switches=1;p.keychain=false;}
   if (p.shape === 'keys') { p.product = 'clicker'; p.size = Math.min(40, Math.max(20, p.size)); }
   p.switches = p.product === 'keycap' ? 1 : Math.round(p.switches);
   if (p.product === 'clicker' && p.shape !== 'keys') p.size = Math.max(p.size, 20 + (p.switches - 1) * p.spacing);

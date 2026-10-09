@@ -16,6 +16,8 @@ import { importArtwork, textArtwork } from './artwork.ts';
 import { printPart, printAssembly } from './parts.ts';
 import { DEFAULTS, sanitize, readKeyLabels, type Params } from './params.ts';
 import { createKeyEditor } from './key-editor.ts';
+import { parseSTL,stlHeight,buildSTLClicker } from './stl.ts';
+import type { MeshData } from '@bdl/geometry';
 import { createBlockEditor } from './block-editor.ts';
 
 const TITLE = 'Keycap / Fidget Clicker';
@@ -24,6 +26,7 @@ let state = sanitize(readHashState(DEFAULTS));
 let artwork: SvgArtwork | undefined, sourceFile: File | undefined;
 let parts: Part[] = [], shown: Part[] = [], selected = '', view = 'assembled';
 let threshold = 180, generation = 0;
+let stlMesh:MeshData|undefined,stlName='',pressed=false;
 const colors: Record<string, string> = {};
 const controls: Array<() => void> = [];
 function track<T extends { set(value: any): void }>(key: keyof Params, control: T): T {
@@ -38,6 +41,7 @@ shell.stageTools.append(
 const set = <K extends keyof Params>(key: K, value: Params[K]) => {
   if (key === 'product') state.size = value === 'keycap' ? 18 : 35;
   if (key === 'shape' && value === 'blocks') { state.product = 'clicker'; state.keychain = true; }
+  if (key === 'shape' && value === 'stl') state.product='clicker';
   if (key === 'shape' && value === 'keys') { state.product = 'clicker'; state.size = 22; state.keychain = true; }
   state = sanitize({ ...state, [key]: value }); renderControls(); schedule();
 };
@@ -72,6 +76,15 @@ const blockEditor = createBlockEditor(() => state.blockData, (value) => set('blo
 const keyEditor = createKeyEditor(() => state, (value) => set('keyLabels', value), (value) => set('keyLayout', value));
 const sizeControl = track('size', slider({ label: 'Dimensione', value: state.size, min: 18, max: 100, unit: 'mm', hint: 'Con più switch la dimensione minima aumenta per ospitarli.', onInput: (v) => set('size', v) }));
 
+const stlFile=el('input',{type:'file',accept:'.stl',id:'clicker-stl'});
+const stlHint=el('p',{class:'bdl-hint'},'Carica uno STL chiuso, in millimetri. Il file resta sul dispositivo.');
+stlFile.addEventListener('change',async()=>{const next=stlFile.files?.[0];if(!next)return;try{if(next.size>20_000_000)throw new Error('STL troppo grande: massimo 20 MB.');const mesh=parseSTL(await next.arrayBuffer());stlMesh=mesh;stlName=next.name;state=sanitize({...state,shape:'stl',product:'clicker',stlScale:1,cutHeight:stlHeight(mesh)/2,switchX:0,switchY:0});stlHint.textContent=stlName;renderControls();rebuild();}catch(e){toast(e instanceof Error?e.message:'STL non valido');}finally{stlFile.value='';}});
+const stlSection=section('STL personalizzato',el('label',{for:'clicker-stl'},'Carica STL'),stlFile,stlHint,
+ track('stlScale',slider({label:'Scala STL',value:state.stlScale,min:.1,max:10,step:.1,onInput:v=>set('stlScale',v)})).root,
+ track('cutHeight',slider({label:'Altezza taglio',value:state.cutHeight,min:1,max:300,step:.1,unit:'mm',hint:'La parte inferiore ospita lo switch; quella superiore diventa il pulsante.',onInput:v=>set('cutHeight',v)})).root,
+ toggle({label:'Mostra premuto',value:false,hint:'Premuto: la sagoma torna alla forma originale. Rilasciato: il pulsante sale della corsa dello switch.',onChange:v=>{pressed=v;show();}}).root,
+ track('mxTravel',slider({label:'Corsa switch',value:state.mxTravel,min:2,max:5,step:.1,unit:'mm',hint:'Riferimento MX blu: 4 mm. Il venditore Fllyvly non pubblica quote complete.',onInput:v=>set('mxTravel',v)})).root,
+ track('mxCalibration',slider({label:'Calibrazione altezza switch',value:state.mxCalibration,min:-1,max:1,step:.1,unit:'mm',hint:'Regola dopo una prova se i due bordi non combaciano a fondo corsa.',onInput:v=>set('mxCalibration',v)})).root);
 let connectionWarnings:string[]=[];
 const connections=connectionPicker({value:()=>state.connection,active:()=>view==='separate'&&state.product!=='clicker',available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
 shell.panel.append(
@@ -79,14 +92,14 @@ shell.panel.append(
     track('compact', toggle({ label: 'Profilo compatto con scavo', value: state.compact, hint: 'Pulsante scavato sotto, bordo che copre lo switch e base più bassa. Disattiva per il profilo originale.', onChange: (v) => set('compact', v) })).root,
     track('product', segmented<Params['product']>({ label: 'Prodotto', value: state.product, options: [{ value: 'clicker', label: 'Fidget clicker' }, { value: 'keycap', label: 'Solo keycap' }], onChange: (v) => set('product', v) })).root,
     el('p', { class: 'bdl-hint' }, 'Per switch MX standard con stelo a croce. Il meccanismo è uno switch reale, da acquistare separatamente.'),
-    el('div', { class: 'bdl-seg-wrap' }, track('shape', segmented<Params['shape']>({ label: 'Forma', value: state.shape, options: [{ value: 'square', label: 'Quadra' }, { value: 'round', label: 'Tonda' }, { value: 'hex', label: 'Esagono' }, { value: 'artwork', label: 'Sagoma disegno' }, { value: 'blocks', label: 'Forme composte' }, { value: 'keys', label: 'Tasti con testo' }], onChange: (v) => set('shape', v) })).root),
+    el('div', { class: 'bdl-seg-wrap' }, track('shape', segmented<Params['shape']>({ label: 'Forma', value: state.shape, options: [{ value: 'square', label: 'Quadra' }, { value: 'round', label: 'Tonda' }, { value: 'hex', label: 'Esagono' }, { value: 'artwork', label: 'Sagoma disegno' }, { value: 'blocks', label: 'Forme composte' }, { value: 'keys', label: 'Tasti con testo' }, {value:'stl',label:'STL personalizzato'}], onChange: (v) => set('shape', v) })).root),
     sizeControl.root,
     track('topThickness', slider({ label: 'Spessore pulsante', value: state.topThickness, min: 1.2, max: 4, step: 0.2, unit: 'mm', onInput: (v) => set('topThickness', v) })).root,
     track('keychain', toggle({ label: 'Occhiello portachiavi', value: state.keychain, onChange: (v) => set('keychain', v) })).root,
     track('loopAngle', slider({ label: 'Posizione occhiello', value: state.loopAngle, min: -180, max: 180, unit: '°', onInput: (v) => set('loopAngle', v) })).root,
     track('loopHole', slider({ label: 'Diametro foro occhiello', value: state.loopHole, min: 3, max: 8, step: 0.5, unit: 'mm', onInput: (v) => set('loopHole', v) })).root,
   ),
-  blockEditor.root, keyEditor.root,
+  stlSection, blockEditor.root, keyEditor.root,
   section('Disegno', el('div', { id: 'keycap-general-art' }, el('label', { for: 'keycap-artwork', class: 'bdl-hint' }, 'Carica SVG o immagine'), file, hint,
     el('p', { class: 'bdl-hint' }, 'SVG: contorni e fori. PNG/JPG/WebP: tracciamento a un colore, sfondo bianco o trasparente. Nessun file viene inviato online.'),
     slider({ label: 'Soglia immagine', value: threshold, min: 10, max: 255, onInput: (v) => { threshold = v; if (sourceFile && !/\.svg$/i.test(sourceFile.name)) void loadFile(sourceFile); } }).root,
@@ -126,18 +139,18 @@ shell.panel.append(
     track('artColor', colorPicker({ label: 'Disegno', value: state.artColor, onChange: (v) => set('artColor', v) })).root,
   ),
   section('Progetto',
-    button({ label: 'Salva progetto', onClick: () => download(new TextEncoder().encode(JSON.stringify({ version: 1, params: state, artwork, colors })), 'clicker-progetto.json', 'application/json') }),
+    button({ label: 'Salva progetto', onClick: () => download(new TextEncoder().encode(JSON.stringify({ version: 1, params: state, artwork, colors, stl:stlMesh?{name:stlName,positions:Array.from(stlMesh.positions),indices:Array.from(stlMesh.indices)}:undefined })), 'clicker-progetto.json', 'application/json') }),
     (() => {
       const projectInput = el('input', { type: 'file', accept: '.json', id: 'keycap-project' });
       projectInput.addEventListener('change', async () => {
         const next = projectInput.files?.[0]; if (!next) return;
         try {
-          if (next.size > 5_000_000) throw new Error('Progetto troppo grande.');
+          if (next.size > 30_000_000) throw new Error('Progetto troppo grande.');
           const data = JSON.parse(await next.text());
           if (data.version !== 1 || !data.params) throw new Error('Progetto non valido.');
           const art = data.artwork;
           if (art) validateArtwork(art);
-          state = sanitize(data.params); artwork = art; sourceFile = undefined; ++generation;
+          let imported:MeshData|undefined;if(data.stl){const v=data.stl;if(!Array.isArray(v.positions)||!Array.isArray(v.indices)||v.positions.length>1350000||v.positions.length%3||v.indices.length%3||v.positions.some((n:unknown)=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>100000)||v.indices.some((n:unknown)=>typeof n!=='number'||!Number.isInteger(n)||n<0||n>=v.positions.length/3))throw new Error('STL nel progetto non valido.');imported={positions:new Float32Array(v.positions),indices:new Uint32Array(v.indices)};}stlMesh=imported;stlName=imported?String(data.stl.name).slice(0,200):'';state = sanitize(data.params); artwork = art; sourceFile = undefined; ++generation;
           Object.keys(colors).forEach((key) => delete colors[key]);
           if (data.colors && typeof data.colors === 'object') for (const [key, color] of Object.entries(data.colors)) if (/^(base|cap(?:-\d+)?|art-\d+(?:-\d+)?)$/.test(key) && /^#[a-f\d]{6}$/i.test(String(color))) colors[key] = String(color);
           hint.textContent = artwork?.name ?? 'Nessun disegno caricato.';
@@ -147,7 +160,7 @@ shell.panel.append(
       });
       return el('div', { class: 'bdl-row' }, el('label', { for: 'keycap-project' }, 'Riapri progetto JSON'), projectInput);
     })(),
-    el('p', { class: 'bdl-hint' }, 'Il progetto JSON conserva il disegno. Dopo un refresh o in un link il file va ricaricato.'),
+    el('p', { class: 'bdl-hint' }, 'Il progetto JSON conserva il disegno e lo STL. Dopo un refresh o in un link il file va ricaricato.'),
   ), panelFooter(),
 );
 
@@ -170,13 +183,17 @@ function validateArtwork(art: SvgArtwork) {
 // Sincronizza i controlli dopo il caricamento di un progetto senza ricreare il viewer.
 function renderControls() {
   for (const control of controls) control();
+  stlSection.hidden=state.shape!=='stl';connections.refresh();
+  for(const sec of shell.panel.querySelectorAll<HTMLElement>('.bdl-section')){const title=sec.querySelector('h2')?.textContent;if(title==='Disegno')sec.hidden=state.shape==='stl';}
+  stlHint.textContent=stlName||'Carica uno STL chiuso, in millimetri. Il file resta sul dispositivo.';
   blockEditor.root.hidden = state.shape !== 'blocks';
-  sizeControl.root.hidden = state.shape === 'blocks';
+  sizeControl.root.hidden = state.shape === 'blocks'||state.shape==='stl';
   const generalArt = document.getElementById('keycap-general-art'); if (generalArt) generalArt.hidden = state.shape === 'keys';
   blockEditor.sync(); keyEditor.root.hidden = state.shape !== 'keys'; keyEditor.sync();
   for (const root of shell.panel.querySelectorAll<HTMLElement>('.bdl-row')) {
     const label = root.textContent ?? '';
-    if (/^(Posizione [XY] switch|Numero switch|Distanza switch)/.test(label)) root.hidden = state.shape === 'keys';
+    if (/^(Posizione [XY] switch|Numero switch|Distanza switch)/.test(label)) root.hidden = state.shape === 'keys'||(state.shape==='stl'&&/^(Numero switch|Distanza switch)/.test(label));
+    if(/^(Profilo compatto|Prodotto|Spessore pulsante|Occhiello portachiavi|Posizione occhiello|Diametro foro occhiello|Altezza bordo)/.test(label))root.hidden=state.shape==='stl';
   }
 }
 function select(id: string) {
@@ -189,7 +206,7 @@ function select(id: string) {
 }
 function show() {
   connections.refresh();if(view==='separate'&&connectionWarnings.length)shell.setStatus(connectionWarnings.join(' '),'warn');
-  shown = view === 'assembled' ? parts : separateParts(mountParts.map(printPart));
+  shown = view === 'assembled' ? parts.map(p=>{if(state.shape!=='stl'||!pressed||p.id==='base')return p;const positions=new Float32Array(p.mesh.positions);for(let i=2;i<positions.length;i+=3)positions[i]-=state.mxTravel;return {...p,mesh:{...p.mesh,positions}};}) : separateParts(mountParts.map(printPart));
   viewer.setParts(shown); select(selected);
 }
 shell.panel.inert = true;
@@ -206,7 +223,7 @@ function rebuild() {
       if (!art) { art = textArtwork(label); if (textCache.size > 100) textCache.clear(); textCache.set(label, art); }
       return art;
     });
-    const result = buildKeycap(M, state, artwork, lettering);
+    const result = state.shape==='stl'?(stlMesh?buildSTLClicker(M,state,stlMesh):(()=>{throw new Error('Carica uno STL per scegliere il taglio.');})()):buildKeycap(M, state, artwork, lettering);
     if (state.mode === 'relief' && (artwork || lettering.some(Boolean))) result.warnings.push('Rilievo: valuta i supporti nel programma di stampa. Per stampare a faccia in giù senza dislivelli scegli intarsio.');
     parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); const connected=state.product==='clicker'?{parts:assemblySeats(M,parts),warnings:[]}:assemblyConnections(M,parts,state.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
     list.replaceChildren(...parts.map((part) => {
