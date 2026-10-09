@@ -17,3 +17,5 @@ Le geometrie e la palette degli oggetti da stampare sono indipendenti dal marchi
 In ogni generatore che permette parti separabili, mostrare il controllo Collegamento solo nella vista di stampa a pezzi. Automatico predefinito, soltanto tipologie compatibili con la geometria. Generare sedi/connettori in posizione adatta e includerli negli export. Conservare le scelte nascoste. Applicare la regola un tool alla volta, iniziando da Natale; non promettere tipologie non implementate.
 
 Aggiornamento degli altri tool autorizzato il 9 ottobre 2026: coaster, keychain, keycap e box usano il selettore condiviso per decorazioni; i connettori strutturali restano quelli del modello (MX, guide, code di rondine Gridfinity). Vase è un pezzo unico e non espone Collegamento.
+
+Precisazione utente: i collegamenti riguardano soltanto testi, SVG, icone e decorazioni separati da ricollocare sulla base. Escludere Fidget Clicker dal selettore e dai perni aggiuntivi; escludere la griglia Gridfinity, senza mostrare una sezione Collegamento per i suoi incastri nativi.

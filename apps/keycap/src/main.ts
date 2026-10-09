@@ -1,7 +1,7 @@
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { assemblyConnections, hasConnectionArtwork, loadManifold, bounds, type Part } from '@bdl/geometry';
+import { assemblyConnections, assemblySeats, hasConnectionArtwork, loadManifold, bounds, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { toSTL, to3MF, download, slug } from '@bdl/export';
 import { zipSync } from 'fflate';
@@ -73,7 +73,7 @@ const keyEditor = createKeyEditor(() => state, (value) => set('keyLabels', value
 const sizeControl = track('size', slider({ label: 'Dimensione', value: state.size, min: 18, max: 100, unit: 'mm', hint: 'Con più switch la dimensione minima aumenta per ospitarli.', onInput: (v) => set('size', v) }));
 
 let connectionWarnings:string[]=[];
-const connections=connectionPicker({value:()=>state.connection,active:()=>view==='separate',available:()=>hasConnectionArtwork(parts),native:()=>state.product==='clicker'&&parts.length>1?'Gli attacchi MX e le sedi degli switch mantengono il loro incastro meccanico. La scelta riguarda le decorazioni.':'',onChange:v=>set('connection',v)});
+const connections=connectionPicker({value:()=>state.connection,active:()=>view==='separate'&&state.product!=='clicker',available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
 shell.panel.append(
   section('Modello',
     track('compact', toggle({ label: 'Profilo compatto con scavo', value: state.compact, hint: 'Pulsante scavato sotto, bordo che copre lo switch e base più bassa. Disattiva per il profilo originale.', onChange: (v) => set('compact', v) })).root,
@@ -208,7 +208,7 @@ function rebuild() {
     });
     const result = buildKeycap(M, state, artwork, lettering);
     if (state.mode === 'relief' && (artwork || lettering.some(Boolean))) result.warnings.push('Rilievo: valuta i supporti nel programma di stampa. Per stampare a faccia in giù senza dislivelli scegli intarsio.');
-    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); const connected=assemblyConnections(M,parts,state.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
+    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); const connected=state.product==='clicker'?{parts:assemblySeats(M,parts),warnings:[]}:assemblyConnections(M,parts,state.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
     list.replaceChildren(...parts.map((part) => {
       const b = button({ label: part.name, size: 'sm', onClick: () => select(part.id) }); b.dataset.part = part.id; return b;
     }));

@@ -46,7 +46,7 @@ for(const [key,label,min,max,step,unit] of [['x','Posizione X dal centro del pia
   manualFields.append(c.root);moveControls.push(()=>{const p=placement();c.set(p ? key==='plate'?p.plate+1:p[key] : key==='plate'?1:0);});
 }
 const dragToggle=toggle({label:'Trascina i pezzi sul piatto',value:moving,onChange:v=>{moving=v;viewer.setMoveEnabled(view==='print'&&moving);}});
-const connections=connectionPicker({value:()=>state.connection,active:()=>view==='print',available:()=>hasConnectionArtwork(parts),native:()=>parts.length>1?(state.gridfinity&&parts.some(p=>p.id.startsWith('grid'))?'Le sezioni Gridfinity mantengono le code di rondine integrate; guide e incastri della scatola restano automatici.':'Le guide del coperchio o del cassetto mantengono il loro incastro. La scelta riguarda le decorazioni.'):'',onChange:v=>set('connection',v)});
+const connections=connectionPicker({value:()=>state.connection,active:()=>view==='print',available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
 const manualSection=section('Posiziona i pezzi',dragToggle.root,el('p',{class:'bdl-hint'},'Nella vista Stampa trascina un pezzo con il mouse oppure selezionalo e regola posizione, rotazione e piatto. Puoi continuare a cambiare misure e decorazioni: le posizioni manuali restano. Trascina una zona vuota per ruotare la vista.'),manualFields,
   button({label:'Ripristina questo pezzo in automatico',onClick:()=>{delete pinned[selected];refreshLayout(false);}}),
   button({label:'Disponi tutti automaticamente',onClick:()=>{pinned={};refreshLayout(true);}}));
