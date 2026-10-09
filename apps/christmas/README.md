@@ -19,3 +19,7 @@ Testo, simbolo, colori e impostazioni comuni rimangono durante i cambi di modell
 Il calcolo delle due versioni della geometria avviene in un worker. Mentre il calcolo procede, l'interfaccia resta utilizzabile; richieste superate vengono ignorate e gli export si riattivano soltanto per la configurazione corrente valida. Durante il trascinamento si muove tutta la scritta (inclusi i puntini e le parti sulle due semisfere); l'aggiornamento ricostruisce la geometria alla fine del gesto. Le transizioni tra viste rispettano la preferenza per il movimento ridotto.
 
 L'anello mobile con aggancio/separazione “slime” è una direzione registrata per il futuro aggiornamento dei portachiavi, non una funzione già implementata qui.
+
+## Collegamenti
+
+Nella vista Pezzi sul piatto, Automatico e Sedi sagomate generano guide per testi e simboli. Perni aggiunge un perno integrato sotto ogni componente con spazio sufficiente e la relativa sede nella base; i dettagli sottili mantengono soltanto la sede sagomata. Il gioco è regolabile. Le semisfere usano un incastro continuo lungo il bordo, anche in Automatico. Gli export nella vista separata e gli ZIP dei piatti includono questi collegamenti. Provare il gioco con una stampa prima del modello finale.

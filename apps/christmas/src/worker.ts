@@ -5,6 +5,6 @@ import type {Params} from './params.ts';
 const ready=loadManifold(wasmUrl);
 self.onmessage=async(event:MessageEvent<{id:number;state:Params;design:Design}>)=>{
  const {id,state,design}=event.data;
- try{const M=await ready,result=build(M,state,design),mounted=printParts(build(M,state,design,true).parts);self.postMessage({id,ok:true,...result,mounted});}
+ try{const M=await ready,result=build(M,state,design),assembly=build(M,state,design,true),mounted=printParts(assembly.parts);self.postMessage({id,ok:true,...result,mounted,connectionWarnings:assembly.warnings.filter(w=>!result.warnings.includes(w))});}
  catch(error){self.postMessage({id,ok:false,error:error instanceof Error?error.message:String(error)});}
 };

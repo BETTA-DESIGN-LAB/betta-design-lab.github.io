@@ -11,3 +11,7 @@ Le geometrie e la palette degli oggetti da stampare sono indipendenti dal marchi
 - Conservare testo, SVG, icone, colori, posizioni e disposizione sui piatti durante i cambi di modalità; adattare soltanto ciò che è necessario.
 - Esperienza interattiva, fluida e premium: trascinamento diretto dell’oggetto completo, cambiamenti live senza bloccare la pagina, transizioni morbide con rispetto per il movimento ridotto.
 - Direzione per gli anelli/fori dei portachiavi: spostamento manuale, aggancio automatico vicino alla base e separazione quando allontanati, con collegamento morbido “slime”. Da implementare nel relativo generatore quando affrontato; non è già disponibile in Natale.
+
+## Collegamenti per stampa a pezzi (9 ottobre 2026)
+
+In ogni generatore che permette parti separabili, mostrare il controllo Collegamento solo nella vista di stampa a pezzi. Automatico predefinito, soltanto tipologie compatibili con la geometria. Generare sedi/connettori in posizione adatta e includerli negli export. Conservare le scelte nascoste. Applicare la regola un tool alla volta, iniziando da Natale; non promettere tipologie non implementate.

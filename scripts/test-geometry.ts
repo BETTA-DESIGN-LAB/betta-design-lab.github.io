@@ -9,7 +9,7 @@ import { buildVase } from '../apps/vase/src/geometry.ts';
 import { DEFAULTS as VASE_DEFAULTS, sanitize } from '../apps/vase/src/params.ts';
 import { stripSvgDoctype } from '../apps/coaster/src/svg.ts';
 import { groundPart, separateParts } from '../apps/coaster/src/parts.ts';
-import { bounds } from '@bdl/geometry';
+import { bounds, type Part } from '@bdl/geometry';
 import { unzipSync, strFromU8 } from 'fflate';
 import { toSTL, to3MF } from '@bdl/export';
 import { buildKeycap, buildFitTest } from '../apps/keycap/src/geometry.ts';
@@ -615,6 +615,19 @@ for(const shape of ['bauble','tree','star','snowflake','heart','bell','gingerbre
  if(blank.text||blank.decoration||blank.hole||carved.colors||carved.depth||carved.ribs||carved.twist)fail('Natale: controlli incompatibili visibili');
  runs++;const flat=sanitizeChristmas({...CHRISTMAS_DEFAULTS,wall:1.2,relief:1.4,thickness:3});if(flat.relief!==1.4)fail('Natale: dimensione inattiva limita il rilievo');
  runs++;const fitted=buildChristmas(M,{...CHRISTMAS_DEFAULTS,shape:'star',x:65,y:65},{text:chainArt});if(!fitted.parts.length||fitted.adjustments.x===undefined||fitted.adjustments.y===undefined)fail('Natale: cambio forma non adatta la scritta');
+}
+
+// Collegamenti generati: il perno entra nella base senza intersecare la sede.
+for(const mode of ['relief','inlay'] as const){
+ runs++;const params={...CHRISTMAS_DEFAULTS,style:'solid' as const,mode,connection:'pins' as const,relief:1.2},design={text:chainArt};
+ const plain=buildChristmas(M,params,design,true),seat=buildChristmas(M,{...params,connection:'seat'},design,true);
+ const asSolid=(p:Part)=>{const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+ const body=asSolid(plain.parts[0]);let found=false;
+ for(const part of plain.parts.slice(1)){const m=asSolid(part),intersection=m.intersect(body);if(intersection.volume()>1e-5)fail('Natale: perno collide con la base '+mode);intersection.delete();m.delete();if(bounds([part]).min[2]<(mode==='relief'?params.thickness-.25:params.thickness-params.relief)-.1)found=true;}
+ if(!found)fail('Natale: perni non generati '+mode);
+ const seatedBody=asSolid(seat.parts[0]);if(body.volume()>=seatedBody.volume())fail('Natale: sedi dei perni mancanti');body.delete();seatedBody.delete();
+ 
+ const mf=unzipSync(to3MF(plain.parts,{title:'Perni'}));if(!mf['3D/3dmodel.model'])fail('Natale: perni non esportati');
 }
 
 console.log(`${runs} combinazioni provate, ${failures} errori`);

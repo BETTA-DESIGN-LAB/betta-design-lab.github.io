@@ -53,6 +53,21 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];if(p.shape==='bauble'&&Math.abs(top[0])<R*.2&&top[1]<R*1.2)top[0]=0;if(p.loop){const center:Vec2=[top[0],top[1]+p.hole/2];base=s.t(base.add(circle(p.hole/2+2,...center)));base=s.t(base.subtract(circle(p.hole/2,...center)));}
  let body=s.t(base.extrude(p.thickness));const solids:{solid:Manifold;id:string;color:string}[]=[];
  for(const d of drawings){const z=p.mode==='relief'?p.thickness-(seated?.25:0):p.thickness-p.relief;const h=p.mode==='relief'?p.relief+(seated?.25:0):p.relief;const solid=s.t(s.t(d.shape.extrude(h)).translate([0,0,z]));if(p.mode!=='relief'||seated)body=s.t(body.subtract(solid));for(const old of solids)old.solid=s.t(old.solid.subtract(solid));if(p.mode!=='engrave')solids.push({...d,solid});}
+ // Perni integrati sotto ciascun componente, solo dove resta materiale sufficiente.
+ if(seated&&p.connection==='pins'){
+  let small=false;
+  for(const d of solids){const connected:Manifold[]=[];
+   for(const component of d.solid.decompose().map(a=>s.t(a))){
+    const z=p.mode==='relief'?p.thickness-.25:p.thickness-p.relief;
+    const footprint=s.t(component.slice(z+.05)),safe=s.t(footprint.offset(-.75,'Round',2,24)),b=footprint.bounds();let anchor:Vec2|undefined;
+    // Preferisce il centro e poi cerca automaticamente un punto interno al tratto.
+    for(const [u,v]of [[.5,.5],...Array.from({length:49},(_,i)=>[(i%7+.5)/7,(Math.floor(i/7)+.5)/7])]){const point:Vec2=[b.min[0]+(b.max[0]-b.min[0])*u,b.min[1]+(b.max[1]-b.min[1])*v];if(s.t(circle(.05,...point).subtract(safe)).area()<1e-8){anchor=point;break;}}
+    if(anchor){const depth=Math.min(.9,z-.7),pin=s.t(s.t(G.cylinder(depth+.12,.45,.55,24)).translate([anchor[0],anchor[1],z-depth]));const socket=s.t(s.t(G.cylinder(depth+.18,.55+p.clearance,.55+p.clearance,24)).translate([anchor[0],anchor[1],z-depth-.06]));body=s.t(body.subtract(socket));connected.push(s.t(component.add(pin)));}else{small=true;connected.push(component);}
+   }
+   d.solid=s.t(G.union(connected));
+  }
+  if(small)warnings.push('I dettagli troppo sottili usano una sede sagomata: non c’è spazio per un perno robusto.');
+ }
  parts.push({id:'base',name:'Ornamento',color:p.baseColor,mesh:toMeshData(body)});for(const d of solids)append(d.solid,d.id,d.id==='text'?'Nome':'Simbolo',d.color);
  }else{
  const amp=p.profile==='smooth'?0:Math.min(p.size*.02,p.wall*.8),twist=(p.profile==='spiral'?240:p.twist)*Math.PI/180;
