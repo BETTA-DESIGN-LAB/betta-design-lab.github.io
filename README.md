@@ -51,3 +51,9 @@ Librerie: [three.js](https://threejs.org) (MIT), [manifold-3d](https://github.co
 
 Quando c'è una repo GitHub: push su `main` → la action `.github/workflows/deploy.yml` esegue
 typecheck, test e build e pubblica `dist/` su GitHub Pages (Settings → Pages → Source: GitHub Actions).
+
+### Collegamenti per parti separate
+
+Coaster, Portachiavi, Keycap/Fidget e Scatole mostrano **Collegamento** nella vista separata o di stampa quando esistono decorazioni separabili. Automatico e Sedi sagomate creano guide di montaggio; Perni aggiunge perni integrati e sedi con gioco di 0,15 mm per lato dove c'è materiale sufficiente. I dettagli sottili restano guidati dalle sedi. I collegamenti seguono posizione e superficie delle decorazioni e sono inclusi negli export separati. Verificare il gioco con una stampa di prova.
+
+Gli attacchi MX, le guide di cassetti/coperchi e le code di rondine Gridfinity mantengono la propria geometria e le proprie tolleranze; non vengono sostituiti dai perni delle decorazioni. Vase è monolitico e non espone questo controllo. Natale conserva il suo selettore e la tolleranza regolabile.

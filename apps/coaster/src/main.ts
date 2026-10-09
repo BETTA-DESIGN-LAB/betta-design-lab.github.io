@@ -1,13 +1,13 @@
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { assemblySeats, loadManifold, bounds, type Part } from '@bdl/geometry';
+import { assemblyConnections, hasConnectionArtwork, loadManifold, bounds, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { zipSync } from 'fflate';
 import { groundPart, separateParts } from './parts.ts';
 import { toSTL, to3MF, download, slug } from '@bdl/export';
 import {
-  appShell, section, slider, segmented, toggle, colorPicker, button, iconButton, toast,
+  connectionPicker, appShell, section, slider, segmented, toggle, colorPicker, button, iconButton, toast,
   panelFooter, readHashState, writeHashState, rafThrottle, ICONS, el,
 } from '@bdl/ui-kit';
 import { buildCoaster } from './geometry.ts';
@@ -145,10 +145,13 @@ const separateExport = button({ label: 'Tutti gli STL separati (ZIP)', size: 'sm
   mountParts.forEach((part) => { files[`${slug(part.name)}-${part.id}.stl`] = toSTL([groundPart(part)]); });
   download(zipSync(files), `${fileBase()}-pezzi.zip`, 'application/zip');
 } });
+let connectionWarnings:string[]=[];
+const connections=connectionPicker({value:()=>state.connection,active:()=>separated,available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
 const layoutSeg = segmented({ label: 'Vista pezzi', value: 'assembled', options: [
   { value: 'assembled', label: 'Assemblata' }, { value: 'separated', label: 'Separata' },
 ], onChange: (value) => { separated = value === 'separated'; updatePreview(true); } });
 function updatePreview(refit = false) {
+  connections.refresh();if(separated&&connectionWarnings.length)shell.setStatus(connectionWarnings.join(' '),'warn');
   viewer.setParts(separated ? separateParts(mountParts) : parts, { refit });
   viewer.selectPart(selectedPart);
 }
@@ -187,7 +190,7 @@ shell.panel.append(
     el('div', { class: 'bdl-row' }, el('label', { for: 'pattern' }, 'Disegno'), patternSelect),
     ...patternRows,
   ),
-  section('Pezzi', layoutSeg.root, selectionLabel, partList, selectedExport, separateExport,
+  section('Pezzi', layoutSeg.root, connections.root, selectionLabel, partList, selectedExport, separateExport,
     el('p', { class: 'bdl-hint' }, 'Gli elementi SVG connessi diventano pezzi distinti. Le linee o forme che si toccano sono unite. L’incisione crea cavità, senza inserti separabili. Gli STL separati poggiano sul piano; il 3MF segue la vista scelta.')),
   section('Colori',
     colorPicker({ label: 'Base', value: state.baseColor, onChange: (v) => set('baseColor', v) }).root,
@@ -209,7 +212,7 @@ showCorner(); showPatternRows(); showCork(); syncSvgControls(); refreshPartList(
 
 const fileBase = () => slug(`sottobicchiere-${state.shape}-${Math.round(state.size)}mm`);
 const exportButtons = [
-  button({ label: 'STL', icon: ICONS.download, onClick: () => { download(toSTL(parts), `${fileBase()}.stl`, 'model/stl'); toast('STL scaricato (pezzi uniti, un colore)'); } }),
+  button({ label: 'STL', icon: ICONS.download, onClick: () => { download(toSTL(separated?separateParts(mountParts):parts), `${fileBase()}.stl`, 'model/stl'); toast(separated?'STL scaricato con i collegamenti dei pezzi separati':'STL scaricato (pezzi uniti, un colore)'); } }),
   button({ label: '3MF multicolore', icon: ICONS.download, variant: 'primary', onClick: () => { download(to3MF(separated ? separateParts(mountParts) : parts, { title: fileBase() }), `${fileBase()}.3mf`, 'model/3mf'); toast('3MF scaricato: assegna un filamento a ogni pezzo nello slicer'); } }),
 ];
 exportButtons.forEach((b) => { b.disabled = true; });
@@ -231,7 +234,7 @@ function rebuild() {
     const p = sanitize(state);
     const res = buildCoaster(M, p, artwork);
     if (!res.parts[0]?.mesh.indices.length) throw new Error('Geometria vuota.');
-    parts = res.parts; mountParts = assemblySeats(M, parts);
+    parts = res.parts; const connected=assemblyConnections(M,parts,p.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
     state = p;
     // Riposiziona la camera solo quando cambia l'ingombro, non a ogni slider.
     const key = `${p.svgUse}-${artwork?.name}-${p.shape}-${p.size}`;
@@ -243,7 +246,7 @@ function rebuild() {
     const b = bounds(parts);
     const dims = `${(b.max[0] - b.min[0]).toFixed(0)} × ${(b.max[1] - b.min[1]).toFixed(0)} × ${(b.max[2] - b.min[2]).toFixed(1)} mm`;
     const ms = Math.round(performance.now() - t0);
-    if (res.warnings.length) shell.setStatus(res.warnings[0], 'warn');
+    const warnings=[...res.warnings,...(separated?connectionWarnings:[])];if (warnings.length) shell.setStatus(warnings[0], 'warn');
     else shell.setStatus(`${dims} · ${parts.length} ${parts.length === 1 ? 'pezzo' : 'pezzi'} · ${ms} ms`);
   } catch (err) {
     console.error(err);

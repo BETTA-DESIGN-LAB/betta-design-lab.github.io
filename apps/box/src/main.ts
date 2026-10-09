@@ -1,11 +1,11 @@
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { assemblySeats, loadManifold, type Part } from '@bdl/geometry';
+import { assemblyConnections, hasConnectionArtwork, loadManifold, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { toSTL, to3MF, download } from '@bdl/export';
 import { zipSync } from 'fflate';
-import { appShell, section, slider, segmented, toggle, colorPicker, button, iconButton, el, toast, panelFooter, readHashState, writeHashState, rafThrottle, ICONS } from '@bdl/ui-kit';
+import { connectionPicker, appShell, section, slider, segmented, toggle, colorPicker, button, iconButton, el, toast, panelFooter, readHashState, writeHashState, rafThrottle, ICONS } from '@bdl/ui-kit';
 import { decorationEditor } from './editor.ts';
 import { validateDecorations, type Decoration } from './decoration.ts';
 import { buildBox } from './geometry.ts';
@@ -46,6 +46,7 @@ for(const [key,label,min,max,step,unit] of [['x','Posizione X dal centro del pia
   manualFields.append(c.root);moveControls.push(()=>{const p=placement();c.set(p ? key==='plate'?p.plate+1:p[key] : key==='plate'?1:0);});
 }
 const dragToggle=toggle({label:'Trascina i pezzi sul piatto',value:moving,onChange:v=>{moving=v;viewer.setMoveEnabled(view==='print'&&moving);}});
+const connections=connectionPicker({value:()=>state.connection,active:()=>view==='print',available:()=>hasConnectionArtwork(parts),native:()=>parts.length>1?(state.gridfinity&&parts.some(p=>p.id.startsWith('grid'))?'Le sezioni Gridfinity mantengono le code di rondine integrate; guide e incastri della scatola restano automatici.':'Le guide del coperchio o del cassetto mantengono il loro incastro. La scelta riguarda le decorazioni.'):'',onChange:v=>set('connection',v)});
 const manualSection=section('Posiziona i pezzi',dragToggle.root,el('p',{class:'bdl-hint'},'Nella vista Stampa trascina un pezzo con il mouse oppure selezionalo e regola posizione, rotazione e piatto. Puoi continuare a cambiare misure e decorazioni: le posizioni manuali restano. Trascina una zona vuota per ruotare la vista.'),manualFields,
   button({label:'Ripristina questo pezzo in automatico',onClick:()=>{delete pinned[selected];refreshLayout(false);}}),
   button({label:'Disponi tutti automaticamente',onClick:()=>{pinned={};refreshLayout(true);}}));
@@ -78,7 +79,7 @@ shell.panel.append(
   editor.root,
   section('Piatti di stampa', range('plateWidth', 'Larghezza piatto', 100, 350), range('plateDepth', 'Profondità piatto', 100, 350), plateSelect, el('p', {class:'bdl-hint'}, 'Disposizione automatica: distanza e margine di 5 mm, con passaggio ai piatti successivi. Le posizioni manuali restano dove le scegli; controlla gli avvisi dopo aver modificato le misure.')),
   section('Anteprima e pezzi', segmented({ label: 'Vista', value: view, options: [{ value: 'closed', label: 'Chiusa' }, { value: 'open', label: 'Aperta' }, { value: 'print', label: 'Stampa' }], onChange: (v) => { view = v; show(); } }).root, pieceList, singleSTL),
-  manualSection,
+  connections.root, manualSection,
   section('Colori', bodyColor.root, lidColor.root),
   section('Stampa', el('p', { class: 'bdl-hint' }, 'Corpo col fondo sul piatto, coperchio separato e involucro del cassetto appoggiato sul retro (apertura in alto). Le guide hanno un piccolo sbalzo di 0,8 mm: controlla l’anteprima del programma di stampa. Il 3MF dispone i pezzi sul piano. Se servono più piatti, scarichi uno ZIP con un file 3MF numerato per ciascun piatto.'), button({label:'Salva progetto completo', onClick:()=>download(new TextEncoder().encode(JSON.stringify({version:1,params:state,decorations,placements:pinned})), 'scatola-progetto.json', 'application/json')}), button({ label: 'Copia link delle misure', onClick: async () => { try { await navigator.clipboard.writeText(location.href); toast('Link copiato: per conservare le decorazioni usa Salva progetto completo'); } catch { toast('Copia l’indirizzo dalla barra del browser'); } } })), panelFooter(),
 );
@@ -97,7 +98,7 @@ const exports = [
 ];
 shell.exportBar.append(...exports);
 function select(id: string, reveal = true) { if(reveal){const match=/^art-(?:lid|front|back|left|right)-(\d+)-/.exec(id);if(match)editor.select(Number(match[1])-1);} selected = parts.some((p) => p.id === id) ? id : ''; if (reveal && view==='print' && selected) { const index=layout.plates.findIndex(items=>items.some(p=>p.id===selected)); if(index>=0 && index!==plate) {plate=index;plateSelect.value=String(plate);viewer.setParts(layout.plates[plate], {refit:true});} } viewer.selectPart(selected || null); singleSTL.disabled = !selected; for (const b of pieceList.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b.dataset.part === selected)); syncMoveControls(); }
-function show(refit = true) { viewer.setMoveEnabled(view==='print' && moving); viewer.setPlateSize(state.plateWidth, state.plateDepth); plateSelect.hidden = view !== 'print'; viewer.setParts(view === 'print' ? layout.plates[plate] ?? [] : view === 'open' ? openParts(parts, state.width, state.model) : parts, {refit}); select(selected, false); }
+function show(refit = true) { connections.refresh(); viewer.setMoveEnabled(view==='print' && moving); viewer.setPlateSize(state.plateWidth, state.plateDepth); plateSelect.hidden = view !== 'print'; viewer.setParts(view === 'print' ? layout.plates[plate] ?? [] : view === 'open' ? openParts(parts, state.width, state.model) : parts, {refit}); select(selected, false); }
 shell.panel.inert = true;
 const M = await loadManifold(wasmUrl); shell.panel.inert = false;
 function refreshLayout(refit = false) {
@@ -113,7 +114,7 @@ function refreshLayout(refit = false) {
 }
 function rebuild() {
   try {
-    const result=buildBox(M,state,decorations);parts=result.parts;mountParts=assemblySeats(M,parts);geometryWarnings=result.warnings;
+    const result=buildBox(M,state,decorations);parts=result.parts;const connected=assemblyConnections(M,parts,state.connection);mountParts=connected.parts;geometryWarnings=[...result.warnings,...connected.warnings];
     pieceList.replaceChildren(...parts.map(p=>{const b=button({label:p.name,size:'sm',onClick:()=>select(p.id)});b.dataset.part=p.id;return b;}));
     exports.forEach(b=>b.disabled=false); refreshLayout(true);writeHashState(state,DEFAULTS);
   }catch(error){parts=[];viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}

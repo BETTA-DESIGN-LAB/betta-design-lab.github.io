@@ -5,6 +5,7 @@ export type PatternMode = 'relief' | 'inlay' | 'engrave';
 
 export interface CoasterParams {
   [key: string]: string | number | boolean;
+  connection: 'auto'|'seat'|'pins';
   svgUse: 'none' | 'decoration' | 'shape';
   svgScale: number;
   svgClearance: number;
@@ -27,6 +28,7 @@ export interface CoasterParams {
 }
 
 export const DEFAULTS: CoasterParams = {
+  connection: 'auto',
   svgUse: 'none',
   svgScale: 70,
   svgClearance: 0,
@@ -56,6 +58,7 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 export function sanitize(p: CoasterParams): CoasterParams {
   return {
     ...p,
+    connection: ['auto','seat','pins'].includes(p.connection)?p.connection:'auto',
     shape: SHAPES.includes(p.shape) ? p.shape : DEFAULTS.shape,
     pattern: PATTERNS.includes(p.pattern) ? p.pattern : DEFAULTS.pattern,
     svgUse: p.svgUse === 'decoration' || p.svgUse === 'shape' ? p.svgUse : 'none',

@@ -1,12 +1,12 @@
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
-import { assemblySeats, loadManifold, bounds, type Part } from '@bdl/geometry';
+import { assemblyConnections, hasConnectionArtwork, loadManifold, bounds, type Part } from '@bdl/geometry';
 import { createViewer } from '@bdl/viewer';
 import { toSTL, to3MF, download, slug } from '@bdl/export';
 import { zipSync } from 'fflate';
 import {
-  appShell, section, slider, segmented, toggle, colorPicker, button, iconButton,
+  connectionPicker, appShell, section, slider, segmented, toggle, colorPicker, button, iconButton,
   el, toast, panelFooter, readHashState, writeHashState, rafThrottle, ICONS,
 } from '@bdl/ui-kit';
 import { separateParts } from '../../coaster/src/parts.ts';
@@ -72,6 +72,8 @@ const blockEditor = createBlockEditor(() => state.blockData, (value) => set('blo
 const keyEditor = createKeyEditor(() => state, (value) => set('keyLabels', value), (value) => set('keyLayout', value));
 const sizeControl = track('size', slider({ label: 'Dimensione', value: state.size, min: 18, max: 100, unit: 'mm', hint: 'Con più switch la dimensione minima aumenta per ospitarli.', onInput: (v) => set('size', v) }));
 
+let connectionWarnings:string[]=[];
+const connections=connectionPicker({value:()=>state.connection,active:()=>view==='separate',available:()=>hasConnectionArtwork(parts),native:()=>state.product==='clicker'&&parts.length>1?'Gli attacchi MX e le sedi degli switch mantengono il loro incastro meccanico. La scelta riguarda le decorazioni.':'',onChange:v=>set('connection',v)});
 shell.panel.append(
   section('Modello',
     track('compact', toggle({ label: 'Profilo compatto con scavo', value: state.compact, hint: 'Pulsante scavato sotto, bordo che copre lo switch e base più bassa. Disattiva per il profilo originale.', onChange: (v) => set('compact', v) })).root,
@@ -116,7 +118,7 @@ shell.panel.append(
   ),
   section('Pezzi',
     segmented({ label: 'Vista', value: view, options: [{ value: 'assembled', label: 'Assemblata' }, { value: 'separate', label: 'Separata' }], onChange: (v) => { view = v; show(); } }).root,
-    list, selectedSTL, partColor.root,
+    connections.root, list, selectedSTL, partColor.root,
   ),
   section('Colori',
     track('baseColor', colorPicker({ label: 'Base', value: state.baseColor, onChange: (v) => set('baseColor', v) })).root,
@@ -186,6 +188,7 @@ function select(id: string) {
   for (const node of list.querySelectorAll('button')) node.setAttribute('aria-pressed', String(node.dataset.part === selected));
 }
 function show() {
+  connections.refresh();if(view==='separate'&&connectionWarnings.length)shell.setStatus(connectionWarnings.join(' '),'warn');
   shown = view === 'assembled' ? parts : separateParts(mountParts.map(printPart));
   viewer.setParts(shown); select(selected);
 }
@@ -205,12 +208,12 @@ function rebuild() {
     });
     const result = buildKeycap(M, state, artwork, lettering);
     if (state.mode === 'relief' && (artwork || lettering.some(Boolean))) result.warnings.push('Rilievo: valuta i supporti nel programma di stampa. Per stampare a faccia in giù senza dislivelli scegli intarsio.');
-    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); mountParts = assemblySeats(M, parts);
+    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); const connected=assemblyConnections(M,parts,state.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
     list.replaceChildren(...parts.map((part) => {
       const b = button({ label: part.name, size: 'sm', onClick: () => select(part.id) }); b.dataset.part = part.id; return b;
     }));
     show(); writeHashState(state, DEFAULTS); exports.forEach((b) => b.disabled = false);
-    const b = bounds(parts);
+    const b = bounds(parts);if(view==='separate')result.warnings.push(...connectionWarnings);
     shell.setStatus(result.warnings[0] ?? `${(b.max[0] - b.min[0]).toFixed(1)} × ${(b.max[1] - b.min[1]).toFixed(1)} mm · ${parts.length} pezzi`, result.warnings.length ? 'warn' : 'ok');
   } catch (error) {
     parts = []; viewer.setParts([]); list.replaceChildren(); select(''); exports.forEach((b) => b.disabled = true);
@@ -222,7 +225,7 @@ const exports = [
     const files: Record<string, Uint8Array> = {}; for (const part of mountParts) files[`${slug(part.name)}.stl`] = toSTL([printPart(part)]);
     download(zipSync(files), 'clicker-stl.zip', 'application/zip');
   } }),
-  button({ label: '3MF di stampa', variant: 'primary', onClick: () => download(to3MF(printAssembly(parts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf') }),
+  button({ label: '3MF di stampa', variant: 'primary', onClick: () => download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf') }),
 ];
 shell.exportBar.append(...exports);
 const schedule = rafThrottle(rebuild);

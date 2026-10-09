@@ -2,7 +2,7 @@
 // e verifica che i pezzi siano solidi chiusi (manifold), non vuoti e nelle misure attese.
 // Gira in CI e in locale con `pnpm test`.
 
-import { assemblySeats, loadManifold } from '@bdl/geometry';
+import { assemblySeats, assemblyConnections, hasConnectionArtwork, loadManifold } from '@bdl/geometry';
 import { buildCoaster } from '../apps/coaster/src/geometry.ts';
 import { DEFAULTS, sanitize as sanitizeCoaster, type CoasterParams } from '../apps/coaster/src/params.ts';
 import { buildVase } from '../apps/vase/src/geometry.ts';
@@ -628,6 +628,29 @@ for(const mode of ['relief','inlay'] as const){
  const seatedBody=asSolid(seat.parts[0]);if(body.volume()>=seatedBody.volume())fail('Natale: sedi dei perni mancanti');body.delete();seatedBody.delete();
  
  const mf=unzipSync(to3MF(plain.parts,{title:'Perni'}));if(!mf['3D/3dmodel.model'])fail('Natale: perni non esportati');
+}
+
+// Collegamenti condivisi: solidi chiusi, nessuna collisione, incastri meccanici conservati.
+{
+ const {buildBox}=await import('../apps/box/src/geometry.ts'),{DEFAULTS:BOX}=await import('../apps/box/src/params.ts');
+ const from=(p:Part)=>{const mesh=new M.Mesh({numProp:3,vertProperties:p.mesh.positions,triVerts:p.mesh.indices});mesh.merge();return new M.Manifold(mesh);};
+ const cases:[string,Part[]][]=[
+  ['coaster',buildCoaster(M,{...DEFAULTS,pattern:'none',svgUse:'decoration',patternMode:'relief'},chainArt).parts],
+  ['keychain',buildKeychain(M,{...CHAIN_DEFAULTS,model:'name',mode:'relief'},{main:chainArt}).parts],
+  ['keycap',buildKeycap(M,{...KEYCAP_DEFAULTS,product:'clicker',mode:'relief',topThickness:2.4},chainArt).parts],
+  ...(['lid','front','back','left','right'] as const).map(face=>['box '+face,buildBox(M,{...BOX,ribbed:false},[{id:1,face,mode:'relief',size:15,u:0,v:0,angle:20,depth:.8,color:'#ffffff',artwork:chainArt}]).parts] as [string,Part[]]),
+ ];
+ for(const [label,original]of cases){
+  for(const mode of ['auto','seat','pins'] as const){runs++;const result=assemblyConnections(M,original,mode);if(!hasConnectionArtwork(original)||result.parts.length!==original.length)fail(label+': pezzi persi');
+   const solids=result.parts.map(from);for(const m of solids)if(m.status()!=='NoError'||m.volume()<=0)fail(label+': connettore invalido');
+   for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.001)fail(label+': collegamenti in collisione '+result.parts[i].id+'/'+result.parts[j].id);hit.delete();}
+   if(mode==='pins'){const plain=assemblySeats(M,original);if(!result.parts.some((p,i)=>bounds([p]).min[2]<bounds([plain[i]]).min[2]-.1||bounds([p]).max[0]>bounds([plain[i]]).max[0]+.1||bounds([p]).min[0]<bounds([plain[i]]).min[0]-.1||bounds([p]).max[1]>bounds([plain[i]]).max[1]+.1||bounds([p]).min[1]<bounds([plain[i]]).min[1]-.1))fail(label+': perni assenti');}
+   if(label==='keycap'){const before=original.find(p=>p.id==='base'),after=result.parts.find(p=>p.id==='base');if(before&&after){const a=from(before),b=from(after),diff=a.subtract(b),extra=b.subtract(a);if(diff.volume()+extra.volume()>.001)fail('MX: base meccanica alterata');[a,b,diff,extra].forEach(m=>m.delete());}}
+   if(to3MF(result.parts).length<1000)fail(label+': export collegamenti vuoto');solids.forEach(m=>m.delete());
+  }
+ }
+ runs++;const noArt=buildKeycap(M,KEYCAP_DEFAULTS).parts,untouched=assemblyConnections(M,noArt,'pins');if(hasConnectionArtwork(noArt)||untouched.parts.some((p,i)=>p.mesh.positions!==noArt[i].mesh.positions))fail('MX senza decorazione: geometria modificata');
+ runs++;const thin={...chainArt,shapes:[[[[-.4,-.005],[.4,-.005],[.4,.005],[-.4,.005]]]]} as typeof chainArt;const tiny=assemblyConnections(M,buildKeychain(M,{...CHAIN_DEFAULTS,model:'name',mode:'relief'},{main:thin}).parts,'pins');if(!tiny.warnings.length)fail('Dettaglio sottile: manca ripiego sede');
 }
 
 console.log(`${runs} combinazioni provate, ${failures} errori`);

@@ -4,6 +4,7 @@ import { DEFAULT_BLOCKS, readBlocks } from './blocks.ts';
 
 export interface Params {
   [key: string]: string | number | boolean;
+  connection: 'auto'|'seat'|'pins';
   product: 'clicker' | 'keycap';
   shape: 'square' | 'round' | 'hex' | 'artwork' | 'blocks' | 'keys';
   keyLabels: string; keyLayout: 'horizontal' | 'vertical';
@@ -15,7 +16,7 @@ export interface Params {
   compact: boolean;
   baseColor: string; capColor: string; artColor: string;
 }
-export const DEFAULTS: Params = {
+export const DEFAULTS: Params = { connection: 'auto',
   product: 'clicker', shape: 'square', size: 35, topThickness: 1.6,
   decorationDepth: 0.8, designScale: 75, mode: 'inlay', gap: 0.35,
   stemFit: 0.1, socketFit: 0.15, rim: 2.4, switches: 1, spacing: 20,
@@ -24,7 +25,7 @@ export const DEFAULTS: Params = {
   blockData: JSON.stringify(DEFAULT_BLOCKS), switchX: 0, switchY: 0, loopAngle: 0, loopHole: 4,
 };
 export function sanitize(input: Params): Params {
-  const p = { ...DEFAULTS };
+  const p = { ...DEFAULTS };p.connection=['auto','seat','pins'].includes(input.connection)?input.connection:'auto';
   for (const key of ['product', 'shape', 'mode'] as const) {
     const choices = key === 'product' ? ['clicker', 'keycap'] : key === 'shape' ? ['square', 'round', 'hex', 'artwork', 'blocks', 'keys'] : ['inlay', 'relief', 'engrave'];
     if (choices.includes(String(input[key]))) (p[key] as string) = input[key];

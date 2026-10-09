@@ -126,4 +126,4 @@ export function outline(
   }
 }
 
-export { assemblySeats } from './seats.ts';
+export { assemblySeats, assemblyConnections, hasConnectionArtwork, type Connection } from './seats.ts';

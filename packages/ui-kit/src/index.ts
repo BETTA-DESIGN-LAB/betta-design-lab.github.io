@@ -273,3 +273,13 @@ export function rafThrottle(fn: () => void): () => void {
     requestAnimationFrame(() => { pending = false; fn(); });
   };
 }
+
+/** Scelta coerente dei collegamenti, visibile solo nella vista di stampa separata. */
+export function connectionPicker(opts:{value:()=>string;active:()=>boolean;available:()=>boolean;native?:()=>string;onChange:(value:'auto'|'seat'|'pins')=>void}){
+ const root=section('Collegamento');
+ const refresh=()=>{root.replaceChildren();root.hidden=!opts.active()||(!opts.available()&&!opts.native?.());if(root.hidden)return;
+ root.append(el('h2',{},'Collegamento'));
+ if(opts.available())root.append(segmented({label:'Collegamento',value:opts.value(),options:[{value:'auto',label:'Automatico'},{value:'seat',label:'Sedi sagomate'},{value:'pins',label:'Perni'}],onChange:v=>{opts.onChange(v as 'auto'|'seat'|'pins');refresh();}}).root,el('p',{class:'bdl-hint'},'Sedi e perni sono integrati nei pezzi esportati. I dettagli sottili o senza materiale sufficiente usano una sede sagomata. Perni con gioco di 0,15 mm per lato: prova un campione prima della stampa finale.'));
+ if(opts.native?.())root.append(el('p',{class:'bdl-hint'},opts.native()));
+ };return {root,refresh};
+}
