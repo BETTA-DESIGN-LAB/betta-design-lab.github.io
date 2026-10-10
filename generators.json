@@ -4,7 +4,7 @@
     {
       "id": "image-svg",
       "name": "Immagine → SVG",
-      "status": "beta",
+      "status": "live",
       "category": "Creatività",
       "blurb": "Trasforma PNG, JPG e WebP in tracciati SVG, scaricali o usali direttamente nei generatori."
     },
@@ -18,21 +18,21 @@
     {
       "id": "christmas",
       "name": "Natale",
-      "status": "beta",
+      "status": "live",
       "category": "Arredo",
       "blurb": "Palline sferiche a onda e spirale, ornamenti piatti e sagome natalizie con nomi, SVG e icone."
     },
     {
       "id": "keychain",
       "name": "Portachiavi",
-      "status": "beta",
+      "status": "live",
       "category": "Accessori",
       "blurb": "Portachiavi con nomi, iniziali, SVG, icone, QR e maglie personalizzate. Rilievi, intarsi e pezzi separati."
     },
     {
       "id": "keycap",
       "name": "Keycap / Fidget Clicker",
-      "status": "beta",
+      "status": "live",
       "category": "Tech",
       "blurb": "Clicker per switch MX con sagome, SVG, immagini e testo. Pulsante e base personalizzabili."
     },
@@ -46,14 +46,14 @@
     {
       "id": "box",
       "name": "Scatole e organizer",
-      "status": "beta",
+      "status": "live",
       "category": "Casa",
       "blurb": "Scatole scorrevoli, impilabili o con cassetto, divisori e decorazioni. Griglie Gridfinity modulari senza ferramenta."
     },
     {
       "id": "vase",
       "name": "Vasi d'arredo",
-      "status": "beta",
+      "status": "live",
       "category": "Arredo",
       "blurb": "Vasi parametrici con profilo liscio, sfaccettato o ondulato, torsione e misure personalizzabili."
     },

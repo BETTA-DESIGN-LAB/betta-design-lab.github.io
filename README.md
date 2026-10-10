@@ -69,3 +69,9 @@ Nei sottobicchieri i pattern incorporati non ricevono sedi/perni aggiuntivi e no
 Il convertitore `image-svg` traccia PNG/JPG/WebP sul dispositivo in un worker. Monocolore o fino a 8 colori semplificati, soglia, inversione, rimozione del colore di sfondo e pulizia delle isole. Contorni pieni con fori, senza bitmap incorporate. Limiti: 10 MB, 40 megapixel, 320 pixel di dettaglio, 18.000 punti e 480 KB di SVG; messaggio esplicito per immagini troppo complesse.
 
 “Usa in un generatore” passa l’SVG nella stessa scheda tramite sessionStorage a coaster, keychain, keycap, box e christmas. Il file resta sul dispositivo e viene validato dal parser SVG della suite. Il trasferimento resta disponibile per 24 ore nella scheda, anche al refresh; un’altra scheda/dispositivo richiede un nuovo trasferimento. Il file scaricato conserva i colori; i generatori applicano i propri colori di stampa. Le sagome richiedono forme connesse.
+
+## Stato della suite · verifica 10 ottobre 2026
+
+I sette tool pubblicati sono disponibili: Sottobicchieri, Vasi d’arredo, Portachiavi, Keycap / Fidget Clicker, Scatole e organizer, Natale e Immagine → SVG. Verifica: typecheck e build riusciti, 758 combinazioni di geometria senza errori, test dei contorni SVG e apertura delle anteprime sul sito pubblico con export attivi. Verificato anche il passaggio diretto dal convertitore ai cinque generatori compatibili.
+
+Disponibile indica un tool utilizzabile e verificato a livello software. Non certifica ogni combinazione di stampa o switch: restano le indicazioni locali per campioni di tolleranza e prova del clicker STL con lo switch reale. I tool non implementati restano “In arrivo”.
