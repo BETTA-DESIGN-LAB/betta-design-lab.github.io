@@ -494,7 +494,7 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
   // Gli involucri del cassetto hanno incastri superiori e inferiori compatibili.
   const labelArt={name:'Viti',shapes:[[[[-.5,-.2],[.5,-.2],[.5,.2],[-.5,.2]]]]} as import('../apps/coaster/src/svg.ts').SvgArtwork;
   for(const gridfinity of [false,true])for(const radius of [0,6])for(const wall of [2,4]){
-    runs++;const p=sanitize({...DEFAULTS,model:'drawer',gridfinity,gridOutput:'box',radius,wall,gridColumns:2,gridRows:2,labelText:'Viti M3'});
+    runs++;const p=sanitize({...DEFAULTS,model:'drawer',gridfinity,gridOutput:'box',radius,wall,gridColumns:2,gridRows:2,labelWidth:wall===2?12:210,labelHeight:wall===2?5:110,labelText:'Viti M3'});
     const result=buildBox(M,p,[],labelArt),solids=result.parts.map(solid);
     for(const m of solids){const c=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||c.length!==1)fail('cassetto impilabile / targhetta: solido non valido '+result.parts[solids.indexOf(m)].id+' '+m.status()+' '+c.length);c.forEach(x=>x.delete());}
     for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.02)fail('targhetta: parti sovrapposte '+result.parts[i].id+'/'+result.parts[j].id+' '+hit.volume());hit.delete();}

@@ -106,10 +106,10 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
       const positioned = s.t(s.t(s.t(cs.scale(d.size)).rotate(d.angle)).translate([d.u, d.v]));
       let safe = s.t(rect(faceWidth - 2 * marginX, hiY - loY).translate([0, (hiY + loY) / 2]));
       if(drawer&&d.face==='front'&&p.labelText.trim()){
-        const lh=Math.min(14,trayHeight-p.floor-8);
+        const lh=Math.min(p.labelHeight,trayHeight-p.floor-8);
         if(lh>=5){
           const labelY=p.wall+p.clearance+p.floor+2+lh/2-p.height/2;
-          const reserved=s.t(rounded(Math.min(70,trayWidth-4)+1.2,lh+1.2,1.8).translate([0,labelY]));
+          const reserved=s.t(rounded(Math.min(p.labelWidth,trayWidth-4)+1.2,lh+1.2,1.8).translate([0,labelY]));
           if(!s.t(positioned.intersect(reserved)).isEmpty())warnings.push('Frontale: spazio riservato alla targhetta; la decorazione resta visibile intorno.');
           safe=s.t(safe.subtract(reserved));
         }
@@ -146,7 +146,7 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
     }
     if(drawer&&p.labelText.trim()){
       if(!labelArtwork)throw new Error('La targhetta richiede un testo valido.');
-      const lw=Math.min(70,trayWidth-4),lh=Math.min(14,trayHeight-p.floor-8);
+      const lw=Math.min(p.labelWidth,trayWidth-4),lh=Math.min(p.labelHeight,trayHeight-p.floor-8);
       if(lh<5)warnings.push('Targhetta conservata: aumenta l’altezza della scatola per mostrarla.');
       else {
         const faceY=-p.depth/2+p.clearance/2;
