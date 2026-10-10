@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {trace,type Options} from '../apps/image-svg/src/trace.ts';
+const opts:Options={mode:'mono',threshold:180,cleanup:0,invert:false,background:false,colors:4};
+const raster=(rows:string[])=>{const data=new Uint8ClampedArray(rows.length*rows[0].length*4);rows.forEach((row,y)=>[...row].forEach((c,x)=>{const i=(y*row.length+x)*4,v=c==='.'?255:0;data.set([v,v,v,c===' '?0:255],i);}));return {width:rows[0].length,height:rows.length,data};};
+const solid=trace(raster(['###','###']),opts);assert.equal(solid.points,4);assert.equal(solid.paths,1);assert.match(solid.svg,/viewBox="0 0 3 2"/);assert.doesNotMatch(solid.svg,/<image|href=/);
+const donut=trace(raster(['#####','#...#','#...#','#####']),opts);assert.equal(donut.paths,2);assert.equal(donut.points,8);assert.match(donut.svg,/fill-rule="evenodd"/);
+assert.equal(trace(raster(['#.','.#']),opts).paths,2);
+assert.equal(trace(raster(['###..#','###...']),{...opts,cleanup:1}).paths,1);
+assert.equal(trace(raster(['#..','...']),{...opts,invert:true}).paths,1);
+assert.throws(()=>trace(raster(['   ','   ']),opts),/Nessun contorno/);
+assert.throws(()=>trace(raster(['...','...']),opts),/Nessun contorno/);
+const colored={width:2,height:1,data:new Uint8ClampedArray([255,0,0,255,0,0,255,255])};assert.equal(trace(colored,{...opts,mode:'color'}).paths,2);assert.match(trace(colored,{...opts,mode:'color'}).svg,/#ff0000/);
+assert.throws(()=>trace({width:321,height:1,data:new Uint8ClampedArray(1284)},opts),/non valida/);
+console.log('Conversione SVG: contorni, fori, trasparenza, isole, inversione e colori verificati.');

@@ -1,3 +1,4 @@
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
@@ -259,6 +260,8 @@ function rebuild() {
 }
 try {
   M = await loadManifold(wasmUrl);
+  await receiveSvg(async file=>{artwork=parseSvg(await file.text(),file.name);svgName.textContent=file.name;state=sanitize({...state,svgUse:'decoration'});svgMode.set('decoration');syncSvgControls();});
+
   rebuild();
 } catch (error) {
   console.error(error);

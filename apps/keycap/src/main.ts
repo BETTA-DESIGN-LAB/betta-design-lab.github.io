@@ -1,3 +1,4 @@
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
@@ -246,5 +247,6 @@ const exports = [
 ];
 shell.exportBar.append(...exports);
 const schedule = rafThrottle(rebuild);
+await receiveSvg(async incoming=>{artwork=await importArtwork(incoming,threshold);sourceFile=undefined;hint.textContent=incoming.name;state=sanitize({...state,shape:'square'});});
 renderControls();
 rebuild();

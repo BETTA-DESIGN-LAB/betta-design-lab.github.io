@@ -63,3 +63,9 @@ Fidget Clicker e griglia Gridfinity non mostrano il selettore né ricevono perni
 Forma → STL personalizzato importa un solido chiuso (ASCII o binario, millimetri, massimo 20 MB/150.000 triangoli). Il taglio orizzontale crea corpo inferiore con sede MX e parte superiore con socket a croce. Posizione XY, scala e altezza del taglio sono regolabili; l’anteprima premuta ricompone la superficie esterna, quella rilasciata mostra la corsa. La stampa conserva i due solidi; il progetto JSON conserva anche lo STL. Gli STL aperti e i tagli senza materiale sufficiente vengono rifiutati. Profilo MX nominale, corsa predefinita 4 mm: gli switch Fllyvly B0F223JY4P sono dichiarati compatibili MX ma senza disegno quotato; calibrare con una prova stampata.
 
 Nei sottobicchieri i pattern incorporati non ricevono sedi/perni aggiuntivi e non mostrano Collegamento. Il selettore è riservato alle decorazioni SVG separabili (anche scritte convertite in tracciati), con verifica automatica dello spazio disponibile; usare SVG come sola sagoma non abilita il selettore per i pattern.
+
+## Immagine → SVG
+
+Il convertitore `image-svg` traccia PNG/JPG/WebP sul dispositivo in un worker. Monocolore o fino a 8 colori semplificati, soglia, inversione, rimozione del colore di sfondo e pulizia delle isole. Contorni pieni con fori, senza bitmap incorporate. Limiti: 10 MB, 40 megapixel, 320 pixel di dettaglio, 18.000 punti e 480 KB di SVG; messaggio esplicito per immagini troppo complesse.
+
+“Usa in un generatore” passa l’SVG nella stessa scheda tramite sessionStorage a coaster, keychain, keycap, box e christmas. Il file resta sul dispositivo e viene validato dal parser SVG della suite. Il trasferimento resta disponibile per 24 ore nella scheda, anche al refresh; un’altra scheda/dispositivo richiede un nuovo trasferimento. Il file scaricato conserva i colori; i generatori applicano i propri colori di stampa. Le sagome richiedono forme connesse.

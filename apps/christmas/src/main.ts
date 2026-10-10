@@ -1,3 +1,4 @@
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 import '@bdl/ui-kit/style.css';
 import {bounds,type Part} from '@bdl/geometry';
 import {createViewer} from '@bdl/viewer';
@@ -76,4 +77,5 @@ function receive(reply:WorkerReply){
 }
 worker.onmessage=(event:MessageEvent<WorkerReply>)=>{busy=false;receive(event.data);if(queued){const latest=queued;queued=undefined;if(latest.id===revision)send(latest);}};
 worker.onerror=()=>{busy=false;queued=undefined;shell.stage.setAttribute('aria-busy','false');shell.setStatus('Anteprima non disponibile. Ricarica la pagina: il link conserva l’ultima configurazione valida.','warn');};
+await receiveSvg(async file=>{extra=parseSvg(await file.text(),file.name);revision++;});
 plateTools.hidden=true;viewSwitch.hidden=true;refreshActions();paint();rebuild();

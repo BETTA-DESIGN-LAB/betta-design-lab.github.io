@@ -2,6 +2,13 @@
   "$comment": "Registro unico di tutti i generatori. L'hub genera le card da qui e la build crea una pagina per ogni voce con status 'live' o 'beta'. id = cartella in apps/.",
   "generators": [
     {
+      "id": "image-svg",
+      "name": "Immagine → SVG",
+      "status": "beta",
+      "category": "Creatività",
+      "blurb": "Trasforma PNG, JPG e WebP in tracciati SVG, scaricali o usali direttamente nei generatori."
+    },
+    {
       "id": "coaster",
       "name": "Sottobicchieri",
       "status": "live",

@@ -1,3 +1,5 @@
+import {importArtwork} from '../../keycap/src/artwork.ts';
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 let mountParts: import('@bdl/geometry').Part[] = [];
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
@@ -119,4 +121,6 @@ function rebuild() {
     exports.forEach(b=>b.disabled=false); refreshLayout(true);writeHashState(state,DEFAULTS);
   }catch(error){parts=[];viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}
 }
-const schedule = rafThrottle(rebuild); controls.forEach(c=>c()); rebuild();
+const schedule = rafThrottle(rebuild);
+await receiveSvg(async file=>{const artwork=await importArtwork(file,180);decorations=validateDecorations([{id:1,face:state.model==='stackable'&&!state.stackLid?'front':'lid',mode:'inlay',size:20,u:0,v:0,angle:0,depth:.6,color:'#d4a429',artwork}]);editor.sync();});
+controls.forEach(c=>c()); rebuild();

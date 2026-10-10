@@ -1,3 +1,4 @@
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
 import { loadManifold,bounds,assemblyConnections,hasConnectionArtwork,type Part } from '@bdl/geometry';
@@ -84,4 +85,5 @@ function rebuild(){try{
  if((state.model==='svg'||state.model==='music')&&!d.main&&!d.extra)throw new Error('Carica un file oppure aggiungi un’icona.');
  const result=build(M,state,d);const connected=assemblyConnections(M,result.parts,state.connection);parts=result.parts;mountParts=connected.parts;connectionWarnings=connected.warnings;lastValid={...state};display();exports.forEach(b=>b.disabled=false);writeHashState({...state,qrSecret:''},DEFAULTS);const b=bounds(parts);const placementWarnings=arrange(mountParts,plateSize,plateSize,pinned).warnings;const warnings=[...result.warnings,...(view==='separate'?connectionWarnings:[]),...placementWarnings];shell.setStatus(warnings.join(' ')||`${(b.max[0]-b.min[0]).toFixed(1)} × ${(b.max[1]-b.min[1]).toFixed(1)} mm · ${parts.length} pezzi`,warnings.length?'warn':'ok');
  }catch(e){if(state.model==='initial'&&!state.text.trim()&&!state.initial.trim()){parts=[];mountParts=[];}else if(parts.length){state={...lastValid};paintControls();}display();exports.forEach(b=>b.disabled=true);shell.setStatus(e instanceof Error?e.message:String(e),'warn');}}
+await receiveSvg(async file=>{uploaded=parseSvg(await file.text(),file.name);state=sanitize({...state,model:'svg',shape:'square'});});
 paintControls();rebuild();
