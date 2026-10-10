@@ -491,6 +491,24 @@ for (const radius of [2,20]) for (const clearance of [0.15,0.5]) for (const ribb
     runs++;const p=sanitize({...DEFAULTS,model,height,wall,floor:4,width:40,depth:35,radius:0,columns:6,rows:6,stackLid:true});
     for(const part of buildBox(M,p).parts){const m=solid(part),c=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||c.length!==1)fail(`box ${model}: misure estreme`);c.forEach(x=>x.delete());m.delete();}
   }
+  // Gli involucri del cassetto hanno incastri superiori e inferiori compatibili.
+  const labelArt={name:'Viti',shapes:[[[[-.5,-.2],[.5,-.2],[.5,.2],[-.5,.2]]]]} as import('../apps/coaster/src/svg.ts').SvgArtwork;
+  for(const gridfinity of [false,true])for(const radius of [0,6])for(const wall of [2,4]){
+    runs++;const p=sanitize({...DEFAULTS,model:'drawer',gridfinity,gridOutput:'box',radius,wall,gridColumns:2,gridRows:2,labelText:'Viti M3'});
+    const result=buildBox(M,p,[],labelArt),solids=result.parts.map(solid);
+    for(const m of solids){const c=m.decompose();if(m.status()!=='NoError'||m.volume()<=0||c.length!==1)fail('cassetto impilabile / targhetta: solido non valido '+result.parts[solids.indexOf(m)].id+' '+m.status()+' '+c.length);c.forEach(x=>x.delete());}
+    for(let i=0;i<solids.length;i++)for(let j=i+1;j<solids.length;j++){const hit=solids[i].intersect(solids[j]);if(hit.volume()>.02)fail('targhetta: parti sovrapposte '+result.parts[i].id+'/'+result.parts[j].id+' '+hit.volume());hit.delete();}
+    const sleeve=solids[result.parts.findIndex(p=>p.id==='case')],upper=sleeve.translate([0,0,p.height+(gridfinity?5:2.5)]),hit=sleeve.intersect(upper);
+    if(hit.volume()>.02)fail('cassetto impilabile: collisione '+gridfinity+'/'+radius+'/'+wall+' '+hit.volume());hit.delete();upper.delete();
+    // Il cassetto e la targhetta scorrono fuori senza toccare l'involucro.
+    for(const distance of [0,5,20,p.depth])for(let i=0;i<result.parts.length;i++)if(result.parts[i].id!=='case'){const moved=solids[i].translate([0,-distance,0]),hit=moved.intersect(sleeve);if(hit.volume()>.02)fail('cassetto: scorrimento ostacolato '+result.parts[i].id);hit.delete();moved.delete();}
+    for(const part of result.parts)if(Math.abs(bounds([printable(part)]).min[2])>.001)fail('targhetta: orientamento di stampa non a terra');
+    if(!result.parts.some(p=>p.id==='art-front-label-plate'))fail('targhetta mancante');
+    if(to3MF(packPlates(result.parts,256,256).plates[0]).length<1000)fail('targhetta: 3MF vuoto');
+    solids.forEach(m=>m.delete());
+  }
+  runs++;const tiny=buildBox(M,sanitize({...DEFAULTS,model:'drawer',height:18,wall:4,floor:4,labelText:'Viti'}),[],labelArt);
+  if(tiny.parts.some(p=>p.id==='art-front-label-plate')||!tiny.warnings.some(s=>s.includes('aumenta')))fail('targhetta: misure troppo piccole non gestite');
   for(const plateSize of [100,180,256]) {
     runs++;const p=sanitize({...DEFAULTS,gridfinity:true,gridOutput:'grid',gridColumns:8,gridRows:6,plateWidth:plateSize,plateDepth:plateSize});
     const segments=gridSegments(p),result=buildBox(M,p);if(segments.reduce((n,g)=>n+g.columns*g.rows,0)!==48)fail('grid: celle perse');

@@ -1,3 +1,4 @@
+import {labelArtwork} from './label.ts';
 import {importArtwork} from '../../keycap/src/artwork.ts';
 import {receiveSvg} from '../../shared/svg-transfer.ts';
 let mountParts: import('@bdl/geometry').Part[] = [];
@@ -48,7 +49,7 @@ for(const [key,label,min,max,step,unit] of [['x','Posizione X dal centro del pia
   manualFields.append(c.root);moveControls.push(()=>{const p=placement();c.set(p ? key==='plate'?p.plate+1:p[key] : key==='plate'?1:0);});
 }
 const dragToggle=toggle({label:'Trascina i pezzi sul piatto',value:moving,onChange:v=>{moving=v;viewer.setMoveEnabled(view==='print'&&moving);}});
-const connections=connectionPicker({value:()=>state.connection,active:()=>view==='print',available:()=>hasConnectionArtwork(parts),onChange:v=>set('connection',v)});
+const connections=connectionPicker({value:()=>state.connection,active:()=>view==='print',available:()=>hasConnectionArtwork(parts.filter(p=>!p.id.startsWith('art-front-label-'))),onChange:v=>set('connection',v)});
 const manualSection=section('Posiziona i pezzi',dragToggle.root,el('p',{class:'bdl-hint'},'Nella vista Stampa trascina un pezzo con il mouse oppure selezionalo e regola posizione, rotazione e piatto. Puoi continuare a cambiare misure e decorazioni: le posizioni manuali restano. Trascina una zona vuota per ruotare la vista.'),manualFields,
   button({label:'Ripristina questo pezzo in automatico',onClick:()=>{delete pinned[selected];refreshLayout(false);}}),
   button({label:'Disponi tutti automaticamente',onClick:()=>{pinned={};refreshLayout(true);}}));
@@ -69,14 +70,18 @@ const gridDimensions=el('p',{class:'bdl-hint'});
 const gridFields=el('div',{class:'bdl-control-stack'},range('gridColumns','Colonne Gridfinity',1,16,1,''),range('gridRows','Righe Gridfinity',1,16,1,''),gridDimensions,gridOutput.root,range('connectorClearance','Gioco code di rondine',0.1,0.4,0.05),el('p',{class:'bdl-hint'},'Griglia aperta alta 5 mm, senza fondo pieno. Celle da 42 mm. La scatola occupa la griglia scelta, con 0,5 mm di gioco complessivo. Griglie grandi vengono divise in sezioni numerate con code di rondine integrate: si assemblano verticalmente, senza viti, perni o magneti. I piedi Gridfinity mantengono gli angoli standard anche quando il corpo è squadrato.'));
 const customSize=el('div',{},range('width','Larghezza',40,220),range('depth','Profondità',35,180));
 const radiusControl=range('radius','Raggio angoli',0,20,0.25);
-const boxFields=section('Modello',models.root,stackLid.root,ribs.root);
+const drawerHint=el('p',{class:'bdl-hint'},'I cassetti sono impilabili: sede sopra e incastro sotto sull’involucro. Usa scatole con la stessa larghezza e profondità; con Gridfinity le sedi accolgono i piedi della scatola superiore.');
+const labelInput=el('input',{class:'bdl-input',type:'text',maxlength:32,'aria-label':'Contenuto del cassetto',placeholder:'Es. Viti M3 × 20',value:state.labelText,onInput:()=>set('labelText',labelInput.value)});
+const labelSection=section('Targhetta frontale',el('label',{},'Cosa contiene il cassetto?',labelInput),el('p',{class:'bdl-hint'},'Scrivi per aggiungere la targhetta; lascia vuoto per toglierla. Dimensioni e posizione si adattano al frontale. Targhetta e scritta vengono incluse tra i pezzi da stampare. Inserisci la targhetta nella sede frontale e fissala con colla.'),button({label:'Rimuovi targhetta',variant:'ghost',onClick:()=>set('labelText','')}));
+controls.push(()=>{if(document.activeElement!==labelInput)labelInput.value=state.labelText;labelSection.hidden=state.model!=='drawer'||(state.gridfinity&&state.gridOutput==='grid');drawerHint.hidden=state.model!=='drawer';});
+const boxFields=section('Modello',models.root,stackLid.root,ribs.root,drawerHint);
 const measureFields=section('Misure esterne del corpo',customSize,range('height','Altezza del corpo',18,130),corners.root,radiusControl,el('p',{class:'bdl-hint'},'Piedi, coperchio e nervature possono aumentare l’ingombro. Le scatole che superano il piatto non vengono tagliate: riduci le celle o usa un piatto più grande.'));
 controls.push(()=>{gridDimensions.textContent=`Griglia ${state.gridColumns*42} × ${state.gridRows*42} mm · corpo scatola ${state.width} × ${state.depth} mm`;gridFields.hidden=!state.gridfinity;customSize.hidden=state.gridfinity;stackLid.root.hidden=state.model!=='stackable';radiusControl.hidden=state.radius===0;ribs.root.hidden=state.gridfinity;const gridOnly=state.gridfinity&&state.gridOutput==='grid';boxFields.hidden=gridOnly;measureFields.hidden=gridOnly;editor.root.hidden=gridOnly;});
 const fitSection=section('Spessori e incastro',range('wall','Spessore pareti',2,4,0.2),range('floor','Spessore fondo',1.6,4,0.2),range('clearance','Gioco degli incastri per lato',0.15,0.5,0.05),el('p',{class:'bdl-hint'},'Prima prova una scatola piccola. Aumenta il gioco se cassetto o coperchio scorrono troppo stretti.'));
 const dividerSection=section('Divisori interni',dividers.root,range('columns','Colonne',1,6,1,''),range('rows','Righe',1,6,1,''),el('p',{class:'bdl-hint'},'1 × 1 lascia un unico vano. I divisori fanno parte del corpo o del cassetto.'));
 controls.push(()=>{const gridOnly=state.gridfinity&&state.gridOutput==='grid';fitSection.hidden=gridOnly;dividerSection.hidden=gridOnly;});
 shell.panel.append(
-  section('Gridfinity',gridToggle.root,gridFields),boxFields,measureFields,
+  section('Gridfinity',gridToggle.root,gridFields),boxFields,labelSection,measureFields,
   fitSection,dividerSection,
   editor.root,
   section('Piatti di stampa', range('plateWidth', 'Larghezza piatto', 100, 350), range('plateDepth', 'Profondità piatto', 100, 350), plateSelect, el('p', {class:'bdl-hint'}, 'Disposizione automatica: distanza e margine di 5 mm, con passaggio ai piatti successivi. Le posizioni manuali restano dove le scegli; controlla gli avvisi dopo aver modificato le misure.')),
@@ -114,9 +119,11 @@ function refreshLayout(refit = false) {
   else shell.setStatus(`${parts.length} pezzi · ${layout.plates.length} ${layout.plates.length===1?'piatto':'piatti'} · ${Object.keys(pinned).filter(id=>parts.some(p=>p.id===id)).length} ${Object.keys(pinned).filter(id=>parts.some(p=>p.id===id)).length===1?'posizione manuale':'posizioni manuali'}`, 'ok');
   exports[1].disabled=!!(layout.oversized.length || layout.warnings.length);
 }
+let cachedLabelText='',cachedLabel:ReturnType<typeof labelArtwork>|undefined;
+function labelDesign(){if(state.model!=='drawer'||!state.labelText.trim())return undefined;if(cachedLabelText!==state.labelText){cachedLabel=labelArtwork(state.labelText);cachedLabelText=state.labelText;}return cachedLabel;}
 function rebuild() {
   try {
-    const result=buildBox(M,state,decorations);parts=result.parts;const connected=assemblyConnections(M,parts,state.connection);mountParts=connected.parts;geometryWarnings=[...result.warnings,...connected.warnings];
+    const result=buildBox(M,state,decorations,labelDesign());parts=result.parts;const connected=assemblyConnections(M,parts.filter(p=>!p.id.startsWith('art-front-label-')),state.connection);mountParts=parts.map(p=>connected.parts.find(q=>q.id===p.id)??p);geometryWarnings=[...result.warnings,...connected.warnings];
     pieceList.replaceChildren(...parts.map(p=>{const b=button({label:p.name,size:'sm',onClick:()=>select(p.id)});b.dataset.part=p.id;return b;}));
     exports.forEach(b=>b.disabled=false); refreshLayout(true);writeHashState(state,DEFAULTS);
   }catch(error){parts=[];viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}
