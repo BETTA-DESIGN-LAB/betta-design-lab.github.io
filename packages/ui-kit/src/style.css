@@ -253,3 +253,26 @@ a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--b
 .bdl-vector-preview img {display:block;width:100%;height:340px;object-fit:contain;background:repeating-conic-gradient(#eee 0% 25%,#fff 0% 50%) 0 0/20px 20px;border-radius:12px;}
 .bdl-vector-preview img:not([src]) {visibility:hidden;}
 @media(max-width:800px){.bdl-vector-preview{grid-template-columns:1fr;inset:24px 16px 110px;align-items:start;}.bdl-vector-preview img{height:220px;}}
+
+/* I download e gli avvisi restano leggibili con molti pezzi e su mobile. */
+.bdl-main, .bdl-panel, .bdl-stage { min-width: 0; }
+.bdl-stage-bottom { flex-wrap: wrap; }
+.bdl-status { max-width: 100%; border-radius: 16px; overflow-wrap: anywhere; }
+.bdl-export { flex-wrap: wrap; max-width: 100%; }
+.bdl-export .bdl-hint { flex-basis: 100%; }
+.bdl-seg { grid-auto-columns: minmax(0, 1fr); }
+.bdl-seg button { min-width: 0; overflow-wrap: anywhere; }
+.bdl-stage-tools { max-width: calc(100% - 24px); flex-wrap: wrap; justify-content: flex-end; }
+.bdl-help { margin-top: 20px; padding: 14px 0; border-top: 1px solid var(--bdl-border); color: var(--bdl-muted); font-size: 13px; }
+.bdl-help summary { cursor: pointer; color: var(--bdl-text); font-weight: 600; }
+.bdl-help summary:focus-visible, a:focus-visible, .bdl-swatch:focus-visible { outline: 2px solid var(--bdl-accent); outline-offset: 3px; }
+.bdl-toast-host { width: max-content; max-width: calc(100vw - 32px); }
+.bdl-toast { overflow-wrap: anywhere; border-radius: 16px; }
+.bdl-recovery { position: fixed; inset: auto 16px 16px; z-index: 100; max-width: 640px; margin: auto; padding: 20px; border: 1px solid var(--bdl-border); border-radius: 16px; background: var(--bdl-surface); box-shadow: var(--bdl-shadow); }
+.bdl-recovery .bdl-btn { margin: 4px; }
+@media (max-width: 820px) {
+  .bdl-stage { position: relative; height: max(460px, 60svh); }
+  .bdl-export .bdl-btn { white-space: normal; }
+  .bdl-topbar-title { min-width: 0; }
+  .bdl-icon-btn { flex-shrink: 0; }
+}

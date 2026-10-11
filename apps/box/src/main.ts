@@ -127,8 +127,9 @@ function rebuild() {
     const result=buildBox(M,state,decorations,labelDesign());parts=result.parts;const connected=assemblyConnections(M,parts.filter(p=>!p.id.startsWith('art-front-label-')),state.connection);mountParts=parts.map(p=>connected.parts.find(q=>q.id===p.id)??p);geometryWarnings=[...result.warnings,...connected.warnings];
     pieceList.replaceChildren(...parts.map(p=>{const b=button({label:p.name,size:'sm',onClick:()=>select(p.id)});b.dataset.part=p.id;return b;}));
     exports.forEach(b=>b.disabled=false); refreshLayout(true);writeHashState(state,DEFAULTS);
-  }catch(error){parts=[];viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}
+  }catch(error){parts=[];mountParts=[];layout={plates:[],oversized:[],warnings:[]};viewer.setParts([]);pieceList.replaceChildren();select('');exports.forEach(b=>b.disabled=true);shell.setStatus(error instanceof Error?error.message:'Geometria non valida','warn');}
 }
-const schedule = rafThrottle(rebuild);
+const rebuildNextFrame = rafThrottle(rebuild);
+const schedule = () => { exports.forEach(b => b.disabled = true); singleSTL.disabled = true; shell.setStatus('Aggiorno il modello…', 'busy'); rebuildNextFrame(); };
 await receiveSvg(async file=>{const artwork=await importArtwork(file,180);decorations=validateDecorations([{id:1,face:state.model==='stackable'&&!state.stackLid?'front':'lid',mode:'inlay',size:20,u:0,v:0,angle:0,depth:.6,color:'#d4a429',artwork}]);editor.sync();});
 controls.forEach(c=>c()); rebuild();

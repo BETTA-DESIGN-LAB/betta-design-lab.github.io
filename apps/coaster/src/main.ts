@@ -252,6 +252,7 @@ function rebuild() {
   } catch (err) {
     console.error(err);
     parts = [];
+    mountParts = [];
     viewer.setParts([]);
     refreshPartList();
     exportButtons.forEach((b) => { b.disabled = true; });

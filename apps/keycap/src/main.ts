@@ -234,7 +234,7 @@ function rebuild() {
     const b = bounds(parts);if(view==='separate')result.warnings.push(...connectionWarnings);
     shell.setStatus(result.warnings[0] ?? `${(b.max[0] - b.min[0]).toFixed(1)} × ${(b.max[1] - b.min[1]).toFixed(1)} mm · ${parts.length} pezzi`, result.warnings.length ? 'warn' : 'ok');
   } catch (error) {
-    parts = []; viewer.setParts([]); list.replaceChildren(); select(''); exports.forEach((b) => b.disabled = true);
+    parts = []; mountParts = []; viewer.setParts([]); list.replaceChildren(); select(''); exports.forEach((b) => b.disabled = true);
     shell.setStatus(error instanceof Error ? error.message : 'Geometria non valida.', 'warn');
   }
 }
@@ -246,7 +246,8 @@ const exports = [
   button({ label: '3MF di stampa', variant: 'primary', onClick: () => download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf') }),
 ];
 shell.exportBar.append(...exports);
-const schedule = rafThrottle(rebuild);
+const rebuildNextFrame = rafThrottle(rebuild);
+const schedule = () => { exports.forEach(b => b.disabled = true); selectedSTL.disabled = true; shell.setStatus('Aggiorno il modello…', 'busy'); rebuildNextFrame(); };
 await receiveSvg(async incoming=>{artwork=await importArtwork(incoming,threshold);sourceFile=undefined;hint.textContent=incoming.name;state=sanitize({...state,shape:'square'});});
 renderControls();
 rebuild();

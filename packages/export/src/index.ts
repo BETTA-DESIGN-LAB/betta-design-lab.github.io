@@ -9,7 +9,7 @@ export function toSTL(parts: readonly Part[], header = 'bettadesignlab'): Uint8A
   const triCount = parts.reduce((n, p) => n + p.mesh.indices.length / 3, 0);
   const buf = new ArrayBuffer(84 + triCount * 50);
   const dv = new DataView(buf);
-  const head = strToU8(header.slice(0, 79));
+  const head = strToU8(header).slice(0, 79);
   new Uint8Array(buf, 0, 80).set(head);
   dv.setUint32(80, triCount, true);
   let o = 84;
@@ -108,7 +108,7 @@ export function download(data: Uint8Array, filename: string, mime = 'application
   document.body.appendChild(a);
   a.click();
   a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /** Nome file sicuro: "Sottobicchiere esagonale" → "sottobicchiere-esagonale". */

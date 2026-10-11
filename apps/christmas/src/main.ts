@@ -76,6 +76,6 @@ function receive(reply:WorkerReply){
  shell.setStatus(messages.join(' ')||`${(b.max[0]-b.min[0]).toFixed(1)} × ${(b.max[1]-b.min[1]).toFixed(1)} mm · ${parts.length} ${parts.length===1?'pezzo':'pezzi'}`,messages.length?'warn':'ok');
 }
 worker.onmessage=(event:MessageEvent<WorkerReply>)=>{busy=false;receive(event.data);if(queued){const latest=queued;queued=undefined;if(latest.id===revision)send(latest);}};
-worker.onerror=()=>{busy=false;queued=undefined;shell.stage.setAttribute('aria-busy','false');shell.setStatus('Anteprima non disponibile. Ricarica la pagina: il link conserva l’ultima configurazione valida.','warn');};
+worker.onerror=()=>{busy=false;queued=undefined;exports.forEach(b=>b.disabled=true);shell.stage.setAttribute('aria-busy','false');shell.setStatus('Anteprima non disponibile. Ricarica la pagina: il link conserva l’ultima configurazione valida.','warn');};
 await receiveSvg(async file=>{extra=parseSvg(await file.text(),file.name);revision++;});
 plateTools.hidden=true;viewSwitch.hidden=true;refreshActions();paint();rebuild();

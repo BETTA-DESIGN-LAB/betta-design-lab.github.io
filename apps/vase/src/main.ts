@@ -87,6 +87,7 @@ function rebuild() {
     shell.setStatus(result.warnings[0] ?? `${(b.max[0] - b.min[0]).toFixed(0)} × ${(b.max[1] - b.min[1]).toFixed(0)} × ${(b.max[2] - b.min[2]).toFixed(0)} mm`, result.warnings.length ? 'warn' : 'ok');
   } catch (error) {
     parts = [];
+    viewer.setParts([]);
     exportButtons.forEach((b) => { b.disabled = true; });
     console.error(error);
     shell.setStatus('Errore nella geometria: prova altri valori', 'warn');

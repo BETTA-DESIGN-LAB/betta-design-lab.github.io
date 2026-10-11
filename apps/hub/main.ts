@@ -1,7 +1,7 @@
 import '@bdl/ui-kit/style.css';
 import './hub.css';
 import { BRAND } from '@bdl/brand';
-import { el, initTheme, themeToggle, brandLogo } from '@bdl/ui-kit';
+import { el, initTheme, themeToggle, brandLogo, usageHelp } from '@bdl/ui-kit';
 import registry from '../../generators.json';
 
 interface Entry { id: string; name: string; status: 'live' | 'beta' | 'planned'; category: string; blurb: string; }
@@ -66,5 +66,6 @@ document.body.append(
       el('div', {}, el('span', {class:'hub-eyebrow'}, 'La suite'), el('h2', {}, 'Cosa vuoi creare oggi?')),
       el('span', {class:'hub-count'}, `${liveCount} generatori disponibili`)),
     el('section', { class: 'hub-grid', 'aria-label': 'Generatori' }, ...entries.map(card)),
+    usageHelp(),
     el('footer', { class: 'hub-footer' }, `© ${BRAND.year} ${BRAND.name}. ${BRAND.license.free} ${BRAND.license.commercial}`)),
 );

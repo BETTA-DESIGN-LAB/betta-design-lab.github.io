@@ -107,12 +107,16 @@ export function appShell(opts: { title: string; intro: string }): AppShell {
   const exportBar = el('div', { class: 'bdl-export' });
   const stage = el('section', { class: 'bdl-stage', 'aria-label': 'Anteprima 3D' },
     stageTools, el('div', { class: 'bdl-stage-bottom' }, status, el('span', { class: 'bdl-spacer' }), exportBar));
+  const help = usageHelp();
+  panel.append(help);
+  new MutationObserver(() => { if (panel.lastElementChild !== help) panel.append(help); }).observe(panel, { childList: true });
+  installStartupRecovery();
   const app = el('div', { class: 'bdl-app' }, topbar(opts.title), el('main', { class: 'bdl-main' }, panel, stage));
   document.body.append(app);
   document.title = `${opts.title} · ${BRAND.name}`;
   return {
     panel, stage, stageTools, exportBar,
-    setStatus(text, kind = 'ok') { status.textContent = text; status.dataset.kind = kind; },
+    setStatus(text, kind = 'ok') { status.textContent = text; status.dataset.kind = kind; stage.setAttribute('aria-busy', String(kind === 'busy')); },
   };
 }
 
@@ -282,4 +286,31 @@ export function connectionPicker(opts:{value:()=>string;active:()=>boolean;avail
  if(opts.available())root.append(segmented({label:'Collegamento',value:opts.value(),options:[{value:'auto',label:'Automatico'},{value:'seat',label:'Sedi sagomate'},{value:'pins',label:'Perni'}],onChange:v=>{opts.onChange(v as 'auto'|'seat'|'pins');refresh();}}).root,el('p',{class:'bdl-hint'},'Sedi e perni sono integrati nei pezzi esportati. I dettagli sottili o senza materiale sufficiente usano una sede sagomata. Perni con gioco di 0,15 mm per lato: prova un campione prima della stampa finale.'));
  if(opts.native?.())root.append(el('p',{class:'bdl-hint'},opts.native()));
  };return {root,refresh};
+}
+
+/** Indicazioni comuni, disponibili anche prima che il motore 3D sia pronto. */
+export function usageHelp(): HTMLElement {
+  return el('details', { class: 'bdl-help' }, el('summary', {}, 'Come usare la suite'),
+    el('p', {}, 'Scegli un modello, modifica le misure e aspetta che l’anteprima sia pronta. Gli avvisi spiegano cosa correggere prima del download.'),
+    el('p', {}, 'STL conserva la geometria; 3MF conserva anche parti e colori, da assegnare ai filamenti nello slicer. I file non includono impostazioni di stampa già calibrate.'),
+    el('p', {}, 'Apri il file in Bambu Studio, OrcaSlicer o PrusaSlicer e controlla scala, orientamento, supporti e dimensioni del piatto. Per gli incastri stampa prima un campione.'),
+    el('p', {}, 'Le immagini, gli SVG e gli STL vengono elaborati sul dispositivo. Per riutilizzare i file dopo una ricarica usa il progetto, dove disponibile, oppure ricaricali.'),
+    el('p', {}, 'Usa un browser aggiornato con JavaScript, WebAssembly e WebGL attivi. Nella vista 3D trascina lo sfondo per ruotare e usa la rotella o due dita per lo zoom.'));
+}
+let recoveryInstalled = false;
+function installStartupRecovery(): void {
+  if (recoveryInstalled) return;
+  recoveryInstalled = true;
+  const recover = () => {
+    if (document.getElementById('bdl-recovery')) return;
+    const notice = el('div', { id: 'bdl-recovery', class: 'bdl-recovery', role: 'alert' },
+      el('p', {}, 'La pagina non è riuscita a completare un’operazione. Ricarica per riprovare; i file caricati potrebbero dover essere selezionati di nuovo.'),
+      button({ label: 'Ricarica la pagina', onClick: () => location.reload() }),
+      el('a', { href: '../', class: 'bdl-btn' }, 'Torna ai generatori'));
+    for (const panel of document.querySelectorAll<HTMLElement>('.bdl-panel')) panel.inert = true;
+    for (const button of document.querySelectorAll<HTMLButtonElement>('.bdl-export button')) button.disabled = true;
+    document.body.append(notice);
+  };
+  window.addEventListener('error', event => { if (event.error) recover(); });
+  window.addEventListener('unhandledrejection', recover);
 }

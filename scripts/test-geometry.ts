@@ -693,5 +693,12 @@ for(const size of [32,45]){
 }
 function importedMesh(m:InstanceType<typeof M.Manifold>){const v=m.getMesh();return {positions:new Float32Array(v.vertProperties),indices:new Uint32Array(v.triVerts)};}
 
+// L'intestazione STL è limitata a 80 byte anche con caratteri Unicode.
+{ runs++; const file=toSTL(parts,'È🧡'.repeat(100));
+  const view=new DataView(file.buffer,file.byteOffset,file.byteLength);
+  const triangles=parts.reduce((n,p)=>n+p.mesh.indices.length/3,0);
+  if(file.length!==84+50*triangles||view.getUint32(80,true)!==triangles)fail('STL: intestazione Unicode corrompe i triangoli');
+}
+
 console.log(`${runs} combinazioni provate, ${failures} errori`);
 process.exit(failures ? 1 : 0);
