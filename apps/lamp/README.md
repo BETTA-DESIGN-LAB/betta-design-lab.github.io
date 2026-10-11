@@ -14,3 +14,5 @@ Generatore locale nel browser; nessun caricamento del file su un server.
 Riferimenti: guida ufficiale LED Lamp Kit-001 fornita dall’utente; https://eu.store.bambulab.com/it/products/led-lamp-kit-001
 
 Prove automatiche: tre forme × tre superfici × tre spessori, STL cubo e sfera in tre orientamenti, rifiuto dello STL senza spazio LED, solidi connessi, collisioni base/paralume, grounding ed export.
+
+Ogni download è un unico ZIP con la guida PDF di montaggio: STL separati, 3MF di tutti i piatti, STL selezionato e campione di incastro. In caso di errore nel caricamento della guida, il download si interrompe e può essere riprovato.
