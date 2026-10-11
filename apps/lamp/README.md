@@ -3,7 +3,7 @@
 Generatore locale nel browser; nessun caricamento del file su un server.
 
 - Forme cilindrica, bombata e a clessidra; superficie liscia, ondulata o a spirale.
-- Paralume a fondo aperto e sommità rastremata. Spessore iniziale 0,8 mm; forme larghe/basse possono richiedere supporti. Controllare lo slicer.
+- Paralume parametrico aperto sopra e sotto, senza tetto piatto da sostenere. Spessore iniziale 0,8 mm; forme larghe/basse possono richiedere supporti. Controllare lo slicer.
 - Base dedicata al LED Kit-001 nominale Ø59 × 8 mm, USB 5 V / 3 W. Sede Ø60,4 mm, fondo 3 mm, fissaggio con biadesivo del kit; uscita cavo e due aperture inferiori. Nessuna dimensione delle viti viene presunta.
 - Attacco comune: collare base Ø70 mm e foro paralume Ø70,4 mm, gioco 0,2 mm per lato. Campione di incastro scaricabile. Verifica fisica necessaria prima della lampada completa.
 - STL chiusi con normali corrette, massimo 20 MB e 6.000 triangoli. Orientamento, altezza uniforme, piano di apertura e centro dell’attacco regolabili. Svuotamento per erosione morfologica con kernel sferico discretizzato; dettagli sottili possono restare pieni. Le geometrie scollegate o con spazio insufficiente vengono rifiutate.

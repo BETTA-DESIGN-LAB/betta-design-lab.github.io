@@ -14,16 +14,15 @@ export function build(M:ManifoldToplevel,input:Params,mesh?:MeshData):{parts:Par
  let shade:Manifold,warnings=['LED Bambu Lab Kit-001 · prova l’incastro con il campione prima della lampada completa.'];
  if(p.source==='parametric'){
   const profile:[number,number][]=[[37.2,0],[37.2,4]];const inside:[number,number][]=[[35.2,0],[35.2,4]];
-  const dome=Math.min(p.height-12,p.diameter/2+p.amplitude);
-  for(let i=1;i<80;i++){
+  for(let i=1;i<=80;i++){
     const z=4+(p.height-4)*i/80,t=(z-4)/(p.height-4);
     const f=p.shape==='bulb'?.74+.26*Math.sin(Math.PI*t):p.shape==='waist'?1-.25*Math.sin(Math.PI*t):1;
     const target=p.diameter/2*f;
-    const r=(37.2+(target-37.2)*Math.min(1,(z-4)/18))*Math.min(1,(p.height-z)/dome);
-    profile.push([r,z]);if(z<p.height-2*p.wall&&r>p.wall)inside.push([r-p.wall,z]);
+    const r=37.2+(target-37.2)*Math.min(1,(z-4)/18);
+    profile.push([r,z]);inside.push([r-p.wall,z]);
   }
-  const polygon=[...profile,[0,p.height] as [number,number],[0,p.height-2*p.wall] as [number,number],...inside.reverse()];
-  if(dome<p.diameter/2)warnings.push('Questa forma larga e bassa può richiedere supporti interni: controlla lo slicer o aumenta l’altezza.');
+  const polygon=[...profile,...inside.reverse()];
+  if(p.height<p.diameter*.7)warnings.push('Questa forma larga e bassa può richiedere supporti: controlla lo slicer o aumenta l’altezza.');
   shade=s.t(s.t(M.CrossSection.ofPolygons([polygon])).revolve(192));
   if(p.texture!=='smooth')shade=s.t(shade.warp(v=>{const r=Math.hypot(v[0],v[1]);if(r<.001)return;const angle=Math.atan2(v[1],v[0]),z=v[2],fade=Math.min(1,Math.max(0,(z-4)/12));const shift=p.amplitude*Math.sin(p.waves*(angle-(p.texture==='spiral'?z/p.height*p.twist*Math.PI/180:0)))*fade*Math.min(1,r/30);v[0]*=(r+shift)/r;v[1]*=(r+shift)/r;}));
  }else{
