@@ -1,4 +1,5 @@
 import './test-vector.ts';
+import './test-lamp.ts';
 // Test della geometria in Node: costruisce ogni combinazione di forma × motivo × tecnica
 // e verifica che i pezzi siano solidi chiusi (manifold), non vuoti e nelle misure attese.
 // Gira in CI e in locale con `pnpm test`.

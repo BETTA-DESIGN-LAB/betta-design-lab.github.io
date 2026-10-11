@@ -77,6 +77,13 @@
       "status": "planned",
       "category": "Ufficio",
       "blurb": "Organizer modulari per la scrivania."
+    },
+    {
+      "id": "lamp",
+      "name": "Lampade",
+      "status": "live",
+      "category": "Arredo",
+      "blurb": "Lampade parametriche e da STL con base per LED Bambu Lab Kit-001."
     }
   ]
 }
