@@ -58,8 +58,12 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
       body=s.t(body.subtract(extrude(recess,p.gridfinity?4.75:2.5,p.height-(p.gridfinity?4.75:2.5))));
       if(!p.gridfinity) {
         const plug=s.t(recess.offset(-p.clearance,'Round',2,64));
-        const ring=s.t(plug.subtract(s.t(plug.offset(-1.2,'Round',2,64))));
-        body=s.t(s.t(body.add(extrude(ring,2.5,-2.3))).translate([0,0,2.3]));
+        // Piede pieno: il fondo è sostenuto dalla stampa, senza il vuoto dell’anello.
+        // Smusso inferiore di 0,8 mm; la parte superiore conserva il gioco d’impilamento.
+        const start=s.t(plug.offset(-0.8,'Round',2,64));
+        const bevel=s.t(M.Manifold.hull([extrude(start,0.01,-2.3),extrude(plug,0.01,-1.5)]));
+        const foot=s.t(bevel.add(extrude(plug,1.7,-1.5)));
+        body=s.t(s.t(body.add(foot)).translate([0,0,2.3]));
       }
     }
     if(drawer && p.ribbed) { const ribs=[];for(let x=-p.width/2+p.radius+p.wall+3;x<p.width/2-p.radius-p.wall-3;x+=7)ribs.push(extrude(s.t(rect(2,1.2).translate([x,-p.depth/2+p.clearance/2-0.3])),trayHeight-6,p.wall+p.clearance));if(ribs.length)body=s.t(body.add(s.t(M.Manifold.union(ribs))));}
