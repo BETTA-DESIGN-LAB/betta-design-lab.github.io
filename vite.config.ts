@@ -17,6 +17,13 @@ for (const g of registry.generators) {
 
 export default defineConfig({
   root,
+  plugins: [{
+    name: 'bdl-analytics',
+    transformIndexHtml(html, context) {
+      const prefix = context.path.replace(/^\//, '').split('/').length > 1 ? '../' : './';
+      return html.replace('</head>', `<script defer src="${prefix}analytics.js"></script>\n</head>`);
+    },
+  }],
   base: './',
   publicDir: resolve(import.meta.dirname, 'public'),
   build: {
