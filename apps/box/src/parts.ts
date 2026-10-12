@@ -49,7 +49,10 @@ export function openParts(parts: readonly Part[], width: number, model = 'slidin
     if(model==='drawer')return part;
     if (part.id !== 'lid' && !part.id.startsWith('art-lid-')) return part;
     const positions = new Float32Array(part.mesh.positions);
-    for (let i=0;i<positions.length;i+=3) positions[i]+=width*0.65;
+    // Il coperchio impilabile si sfila dall’alto; le sue decorazioni lo seguono.
+    const axis = model === 'stackable' ? 2 : 0;
+    const distance = model === 'stackable' ? Math.max(15, width * 0.25) : width * 0.65;
+    for (let i=axis;i<positions.length;i+=3) positions[i]+=distance;
     return {...part,mesh:{positions,indices:part.mesh.indices}};
   });
 }
