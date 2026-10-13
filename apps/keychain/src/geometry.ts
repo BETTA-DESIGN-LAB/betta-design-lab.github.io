@@ -63,8 +63,14 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const bore=s.t(s.t(C.circle(p.hole/2,64)).translate([cx,cy]));if(p.loop)base=s.t(base.subtract(bore));
  let body=s.t(base.extrude(p.thickness));const field=s.t(base.offset(-0.6,'Round',2,32));let extraField=field;
  const decorate=(a:SvgArtwork|undefined,w:number,h:number,x:number,y:number,id:string,mode=p.mode,color=p.artColor,outline=false,rotation=p.angle)=>{
- if(!a)return;let drawing=fit(a,w,h);drawing=s.t(s.t(drawing.rotate(rotation)).translate([x,y]));const clipped=s.t(drawing.intersect(field));
- if(clipped.isEmpty())throw new Error('Decorazione fuori dalla superficie.');if(id==='Codice musicale'&&drawing.area()-clipped.area()>.01)throw new Error('Il codice musicale supera il bordo: aumenta la base, riduci il disegno o spostalo. Il codice deve restare intero.');if(drawing.area()-clipped.area()>.01)warnings.push('Decorazione ritagliata: riduci la misura o spostala.');
+ if(!a)return;let drawing=fit(a,w,h);drawing=s.t(s.t(drawing.rotate(rotation)).translate([x,y]));let clipped=s.t(drawing.intersect(field));
+ if(clipped.isEmpty())throw new Error('Decorazione fuori dalla superficie.');if(id==='Codice musicale'&&drawing.area()-clipped.area()>.01){
+  const original=s.t(drawing.translate([-x,-y]));let low=0,high=1;
+  for(let i=0;i<18;i++){const k=(low+high)/2,candidate=s.t(s.t(original.scale(k)).translate([x,y])),outside=s.t(candidate.subtract(field));if(outside.area()<1e-7)low=k;else high=k;}
+  if(low<0.05)throw new Error('Sposta il codice dentro la base oppure aumenta le dimensioni della base.');
+  drawing=s.t(s.t(original.scale(low)).translate([x,y]));clipped=drawing;
+  warnings.push('Codice adattato allo spazio disponibile per mantenerlo intero. Aumenta la base per ingrandirlo ancora.');
+ }if(drawing.area()-clipped.area()>.01)warnings.push('Decorazione ritagliata: riduci la misura o spostala.');
  if(outline&&p.textOutline){const halo=s.t(s.t(clipped.offset(p.outlineWidth,'Round',2,32)).intersect(field));const solid=s.t(s.t(halo.extrude(p.relief)).translate([0,0,mode==='relief'?p.thickness:p.thickness-p.relief]));if(mode!=='relief')body=s.t(body.subtract(solid));for(const old of decorations)old.solid=s.t(old.solid.subtract(solid));decorations.push({solid,id:id+'-contorno',color:p.outlineColor});}
  const z=mode==='relief'?p.thickness:p.thickness-p.relief;
  const solid=s.t(s.t(clipped.extrude(p.relief)).translate([0,0,z]));
