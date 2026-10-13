@@ -39,6 +39,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  else if(p.model==='jersey')base=s.t(s.t(C.ofPolygons([[[-.3,-.5],[.3,-.5],[.3,.1],[.48,0],[.6,.25],[.27,.5],[.12,.5],[.08,.4],[-.08,.4],[-.12,.5],[-.27,.5],[-.6,.25],[-.48,0],[-.3,.1]]])).scale([p.width/1.2,p.depth]));
  else if(p.shape==='heart')base=s.t(C.ofPolygons([Array.from({length:160},(_,i)=>{const t=i*2*Math.PI/160;return [Math.pow(Math.sin(t),3)*p.width/2,(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*p.depth/32] as [number,number];})],'EvenOdd'));
  else if(p.shape==='hex')base=s.t(C.ofPolygons([regularPolygon(6,Math.min(p.width,p.depth))]));
+ else if(p.shape==='pill'){const r=Math.min(p.width,p.depth)/2,delta=Math.abs(p.width-p.depth)/2;const ends=[-1,1].map(sign=>s.t(s.t(C.circle(r,96)).translate(p.width>=p.depth?[sign*delta,0]:[0,sign*delta])));base=s.t(C.hull(ends));}
  else if(p.shape==='oval')base=s.t(s.t(C.circle(1,128)).scale([p.width/2,p.depth/2]));
  else base=p.shape==='round'?s.t(C.circle(Math.min(p.width,p.depth)/2,128)):rounded(p.width,p.depth);
  const shirt=base;
@@ -48,13 +49,22 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  let edgeY=-Infinity;
  for(const polygon of base.toPolygons())for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length];if(a[0]!==b[0]&&cx>=Math.min(a[0],b[0])&&cx<=Math.max(a[0],b[0]))edgeY=Math.max(edgeY,a[1]+(b[1]-a[1])*(cx-a[0])/(b[0]-a[0]));}
  if(!Number.isFinite(edgeY)){const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];cx=top[0];edgeY=top[1];}
- const cy=p.ringType==='internal'?edgeY-p.hole/2-p.ringWall:edgeY+p.hole/2;
+ let cy=p.ringType==='internal'?edgeY-p.hole/2-p.ringWall:edgeY+p.hole/2;
+ if(p.model==='music'){
+  const origin:[number,number]=[(bb.min[0]+bb.max[0])/2,(bb.min[1]+bb.max[1])/2],a=p.ringAngle*Math.PI/180,dir:[number,number]=[Math.cos(a),Math.sin(a)];let distance=0;
+  for(const polygon of base.toPolygons())for(let i=0;i<polygon.length;i++){
+   const v=polygon[i],w=polygon[(i+1)%polygon.length],sx=w[0]-v[0],sy=w[1]-v[1],qx=v[0]-origin[0],qy=v[1]-origin[1],cross=dir[0]*sy-dir[1]*sx;
+   if(Math.abs(cross)<1e-9)continue;const t=(qx*sy-qy*sx)/cross,u=(qx*dir[1]-qy*dir[0])/cross;if(t>=0&&u>=0&&u<=1)distance=Math.max(distance,t);
+  }
+  distance+=p.ringType==='internal'?-(p.hole/2+p.ringWall):p.hole/2;
+  cx=origin[0]+dir[0]*distance;cy=origin[1]+dir[1]*distance;
+ }
  const ring=s.t(s.t(C.circle(p.hole/2+p.ringWall,64)).translate([cx,cy]));if(p.loop&&p.ringType==='external')base=s.t(base.add(ring));
  const bore=s.t(s.t(C.circle(p.hole/2,64)).translate([cx,cy]));if(p.loop)base=s.t(base.subtract(bore));
  let body=s.t(base.extrude(p.thickness));const field=s.t(base.offset(-0.6,'Round',2,32));let extraField=field;
  const decorate=(a:SvgArtwork|undefined,w:number,h:number,x:number,y:number,id:string,mode=p.mode,color=p.artColor,outline=false,rotation=p.angle)=>{
  if(!a)return;let drawing=fit(a,w,h);drawing=s.t(s.t(drawing.rotate(rotation)).translate([x,y]));const clipped=s.t(drawing.intersect(field));
- if(clipped.isEmpty())throw new Error('Decorazione fuori dalla superficie.');if(drawing.area()-clipped.area()>.01)warnings.push('Decorazione ritagliata: riduci la misura o spostala.');
+ if(clipped.isEmpty())throw new Error('Decorazione fuori dalla superficie.');if(id==='Codice musicale'&&drawing.area()-clipped.area()>.01)throw new Error('Il codice musicale supera il bordo: aumenta la base, riduci il disegno o spostalo. Il codice deve restare intero.');if(drawing.area()-clipped.area()>.01)warnings.push('Decorazione ritagliata: riduci la misura o spostala.');
  if(outline&&p.textOutline){const halo=s.t(s.t(clipped.offset(p.outlineWidth,'Round',2,32)).intersect(field));const solid=s.t(s.t(halo.extrude(p.relief)).translate([0,0,mode==='relief'?p.thickness:p.thickness-p.relief]));if(mode!=='relief')body=s.t(body.subtract(solid));for(const old of decorations)old.solid=s.t(old.solid.subtract(solid));decorations.push({solid,id:id+'-contorno',color:p.outlineColor});}
  const z=mode==='relief'?p.thickness:p.thickness-p.relief;
  const solid=s.t(s.t(clipped.extrude(p.relief)).translate([0,0,z]));
@@ -69,7 +79,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const code=s.t(s.t(s.t(section(design.main).scale([size,size])).rotate(p.qrAngle)).translate([p.qrX,p.qrY]));const solid=s.t(s.t(code.extrude(p.relief)).translate([0,0,p.thickness-p.relief]));body=s.t(body.subtract(solid));parts.push({id:'qr',name:'QR',color:p.artColor,mesh:toMeshData(solid)});
  if(size/(design.qrModules??29)<.8)warnings.push('QR molto fine: aumenta le dimensioni o accorcia il link.');
  warnings.push('QR: usa base chiara e codice scuro; verifica la scansione dopo la stampa.');
- }else if(p.model==='music'){const hasCover=Boolean(design.cover);decorate(design.main,p.width*(hasCover?.5:.8),p.depth*.5,hasCover?p.width*.16:0,0,'Codice musicale');decorate(design.cover,p.depth*.65,p.depth*.65,-p.width*.32,0,'Copertina');}
+ }else if(p.model==='music'){const hasCover=Boolean(design.cover);decorate(design.main,p.width*(hasCover?.5:.8)*p.scale/100,p.depth*.5*p.scale/100,(hasCover?p.width*.16:0)+p.x,p.y,'Codice musicale');decorate(design.cover,p.depth*.65,p.depth*.65,-p.width*.32,0,'Copertina');}
  else if(p.model==='jersey') {
  const layer=(drawing:CrossSection,id:string,color:string)=>{const clipped=s.t(drawing.intersect(shirt));if(clipped.isEmpty())return;const solid=s.t(s.t(clipped.extrude(p.relief)).translate([0,0,p.mode==='relief'?p.thickness:p.thickness-p.relief]));if(p.mode!=='relief'){const cutter=s.t(s.t(s.t(clipped.offset(.005,'Round',2,32)).extrude(p.relief+.01)).translate([0,0,p.thickness-p.relief]));body=s.t(body.subtract(cutter));}for(const old of decorations)old.solid=s.t(old.solid.subtract(solid));decorations.push({solid,id,color});};
  const seed=s.t(C.square([1,1],true));let pattern=s.t(seed.subtract(seed));const bars:CrossSection[]=[];
