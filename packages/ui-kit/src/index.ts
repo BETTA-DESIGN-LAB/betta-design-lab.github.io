@@ -292,7 +292,7 @@ export function connectionPicker(opts:{value:()=>string;active:()=>boolean;avail
 export function usageHelp(): HTMLElement {
   return el('details', { class: 'bdl-help' }, el('summary', {}, 'Come usare la suite'),
     el('p', {}, 'Scegli un modello, modifica le misure e aspetta che l’anteprima sia pronta. Gli avvisi spiegano cosa correggere prima del download.'),
-    el('p', {}, 'STL conserva la geometria; 3MF conserva anche parti e colori, da assegnare ai filamenti nello slicer. I file non includono impostazioni di stampa già calibrate.'),
+    el('p', {}, 'STL conserva la geometria; 3MF conserva parti, colori e assegnazioni ai filamenti. Aprilo come progetto per mantenere i colori. I file non includono impostazioni di stampa già calibrate.'),
     el('p', {}, 'Apri il file in Bambu Studio, OrcaSlicer o PrusaSlicer e controlla scala, orientamento, supporti e dimensioni del piatto. Per gli incastri stampa prima un campione.'),
     el('p', {}, 'Le immagini, gli SVG e gli STL vengono elaborati sul dispositivo. Per riutilizzare i file dopo una ricarica usa il progetto, dove disponibile, oppure ricaricali.'),
     el('p', {}, 'Usa un browser aggiornato con JavaScript, WebAssembly e WebGL attivi. Nella vista 3D trascina lo sfondo per ruotare e usa la rotella o due dita per lo zoom.'));
