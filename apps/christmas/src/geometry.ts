@@ -16,7 +16,16 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  const flake=(r:number,w:number)=>{const arms:CrossSection[]=[];for(let i=0;i<6;i++){const a=i*Math.PI/3;const rot=(x:number,y:number):Vec2=>[x*Math.cos(a)-y*Math.sin(a),x*Math.sin(a)+y*Math.cos(a)];arms.push(segment([0,0],rot(r,0),w));for(const at of [.48,.73])for(const sign of [-1,1])arms.push(segment(rot(r*at,0),rot(r*(at+.16),sign*r*.19),w));}return union(arms);};
  const fit=(a:SvgArtwork,w:number,h:number)=>{if(!a.shapes.length)throw new Error('SVG senza forme utilizzabili.');const c=union(a.shapes.map(v=>s.t(C.ofPolygons(v,'EvenOdd')))),b=c.bounds();const k=Math.min(w/(b.max[0]-b.min[0]),h/(b.max[1]-b.min[1]));return s.t(s.t(c.translate([-(b.max[0]+b.min[0])/2,-(b.max[1]+b.min[1])/2])).scale([k,k]));};
  const drawings:{shape:CrossSection;id:string;color:string}[]=[];
- if(p.text.trim()&&design.text)drawings.push({shape:s.t(s.t(fit(design.text,p.size*.8*p.scale/100,p.size*.25*p.scale/100).rotate(p.angle)).translate([p.x,p.y])),id:'text',color:p.artColor});
+ if(p.text.trim()&&design.text){
+ let text=s.t(fit(design.text,p.size*.8*p.scale/100,p.size*.25*p.scale/100).rotate(p.angle));
+ // Sulla sfera il nome deve rimanere sulla superficie anteriore anche ingrandendolo.
+ if(p.model==='sphere'){
+ const b=text.bounds(),maxX=Math.max(Math.abs(b.min[0]),Math.abs(b.max[0])),maxY=Math.max(Math.abs(b.min[1]),Math.abs(b.max[1]));
+ const k=Math.min(1,(R*.8-Math.abs(p.x))/maxX,(R*.75-Math.abs(p.y))/maxY);
+ if(k>0&&k<1){text=s.t(text.scale([k*.999,k*.999]));warnings.push('La scritta ha raggiunto la dimensione massima disponibile sul fronte della pallina.');}
+ }
+ drawings.push({shape:s.t(text.translate([p.x,p.y])),id:'text',color:p.artColor});
+ }
  if(design.extra)drawings.push({shape:s.t(s.t(fit(design.extra,p.extraSize,p.extraSize).rotate(p.extraAngle)).translate([p.extraX,p.extraY])),id:'symbol',color:p.extraColor});
  const append=(solid:Manifold,id:string,name:string,color:string)=>{for(const [i,component]of solid.decompose().map(a=>s.t(a)).entries())if(component.volume()>1e-5)parts.push({id:`${id}-${i}`,name:`${name}${i?' '+(i+1):''}`,color,mesh:toMeshData(component)});};
  if(p.model==='flat'){
