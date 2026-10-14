@@ -1,3 +1,4 @@
+import './test-export.ts';
 import './test-vector.ts';
 import './test-lamp.ts';
 // Test della geometria in Node: costruisce ogni combinazione di forma × motivo × tecnica
