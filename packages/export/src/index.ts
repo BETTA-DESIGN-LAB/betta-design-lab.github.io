@@ -50,9 +50,8 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   const [cx, cy] = opts.plateCenter ?? [128, 128];
   const live = parts.filter((p) => p.mesh.indices.length > 0);
   const palette = [...new Set(live.map(p => p.color.toUpperCase()))];
-  const materials = live
-    .map((p) => `<base name="${esc(p.name)}" displaycolor="${p.color.toUpperCase()}FF" />`)
-    .join('');
+  const colorGroupId = live.length + 3;
+  const materials = `<m:colorgroup id="${colorGroupId}">${palette.map(color => `<m:color color="${color}FF"/>`).join('')}</m:colorgroup>`;
 
   const objects = live
     .map((p, i) => {
@@ -65,7 +64,7 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
       for (let k = 0; k < f.length; k += 3) {
         tris.push(`<triangle v1="${f[k]}" v2="${f[k + 1]}" v3="${f[k + 2]}"/>`);
       }
-      return `<object id="${i + 2}" name="${esc(p.name)}" type="model" pid="1" pindex="${i}"><mesh><vertices>${verts.join('')}</vertices><triangles>${tris.join('')}</triangles></mesh></object>`;
+      return `<object id="${i + 2}" name="${esc(p.name)}" type="model" pid="${colorGroupId}" pindex="${palette.indexOf(p.color.toUpperCase())}"><mesh><vertices>${verts.join('')}</vertices><triangles>${tris.join('')}</triangles></mesh></object>`;
     })
     .join('');
 
@@ -78,8 +77,8 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   const meta = [
     ['Title', opts.title ?? 'bettadesignlab model'],
     ['Designer', opts.designer ?? 'bettadesignlab'],
-    // Bambu riconosce il contenitore di progetto da questo marcatore di compatibilità.
-    ['Application', 'BambuStudio-02.00.00.00'],
+    // Modello standard: non presentarlo come un progetto con preset Bambu.
+    ['Application', 'bettadesignlab'],
     ['Generator', 'bettadesignlab'],
     ['BambuStudio:3mfVersion', '1'],
     ['CreationDate', new Date().toISOString().slice(0, 10)],
@@ -88,7 +87,7 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
     .join('');
 
   const model = `<?xml version="1.0" encoding="UTF-8"?>
-<model unit="millimeter" xml:lang="it-IT" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">${meta}<resources><basematerials id="1">${materials}</basematerials>${objects}${assembly}</resources><build><item objectid="${asmId}" transform="1 0 0 0 1 0 0 0 1 ${cx} ${cy} 0"/></build></model>`;
+<model unit="millimeter" xml:lang="it-IT" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" requiredextensions="m">${meta}<resources>${materials}${objects}${assembly}</resources><build><item objectid="${asmId}" transform="1 0 0 0 1 0 0 0 1 ${cx} ${cy} 0"/></build></model>`;
 
   const contentTypes = `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>`;
@@ -100,17 +99,8 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   // Nessun collegamento AMS né preset specifico della stampante del cliente.
   const partSettings = live.map((p, i) => `<part id="${i + 2}" subtype="normal_part"><metadata key="name" value="${esc(p.name)}"/><metadata key="extruder" value="${palette.indexOf(p.color.toUpperCase()) + 1}"/><metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/></part>`).join('');
   const modelSettings = `<?xml version="1.0" encoding="UTF-8"?><config><object id="${asmId}"><metadata key="name" value="${esc(opts.title ?? 'model')}"/><metadata key="extruder" value="1"/>${partSettings}</object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="${asmId}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance></plate></config>`;
-  const projectSettings = JSON.stringify({
-    nozzle_diameter: ['0.4'],
-    filament_colour: palette,
-    filament_type: palette.map(() => 'PLA'),
-    filament_settings_id: palette.map(() => 'Generic PLA'),
-    filament_diameter: palette.map(() => '1.75'),
-    filament_vendor: palette.map(() => 'Generic'),
-  });
   return zipSync({
     'Metadata/model_settings.config': strToU8(modelSettings),
-    'Metadata/project_settings.config': strToU8(projectSettings),
     '[Content_Types].xml': strToU8(contentTypes),
     '_rels/.rels': strToU8(rels),
     '3D/3dmodel.model': strToU8(model),
