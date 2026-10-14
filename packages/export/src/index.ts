@@ -1,6 +1,6 @@
 // Export dei modelli: STL binario (tutti i pezzi uniti) e 3MF multi-oggetto
 // (un oggetto per pezzo, con colore), che Bambu Studio / PrusaSlicer / Orca aprono
-// come pezzi separati da assegnare ai filamenti.
+// come parti già assegnate ai filamenti in base al colore.
 
 import { zipSync, strToU8 } from 'fflate';
 import type { Part } from '@bdl/geometry';
@@ -49,6 +49,7 @@ export interface ThreeMFOptions {
 export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8Array {
   const [cx, cy] = opts.plateCenter ?? [128, 128];
   const live = parts.filter((p) => p.mesh.indices.length > 0);
+  const palette = [...new Set(live.map(p => p.color.toUpperCase()))];
   const materials = live
     .map((p) => `<base name="${esc(p.name)}" displaycolor="${p.color.toUpperCase()}FF" />`)
     .join('');
@@ -77,7 +78,10 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   const meta = [
     ['Title', opts.title ?? 'bettadesignlab model'],
     ['Designer', opts.designer ?? 'bettadesignlab'],
-    ['Application', 'bettadesignlab'],
+    // Bambu riconosce il contenitore di progetto da questo marcatore di compatibilità.
+    ['Application', 'BambuStudio-02.00.00.00'],
+    ['Generator', 'bettadesignlab'],
+    ['BambuStudio:3mfVersion', '1'],
     ['CreationDate', new Date().toISOString().slice(0, 10)],
   ]
     .map(([k, val]) => `<metadata name="${k}">${esc(val)}</metadata>`)
@@ -91,7 +95,22 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   const rels = `<?xml version="1.0" encoding="UTF-8"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>`;
 
+  // Le proprietà colore standard non bastano a Bambu/Orca: ogni volume deve
+  // avere un extruder 1-based e la palette va dichiarata nel progetto.
+  // Nessun collegamento AMS né preset specifico della stampante del cliente.
+  const partSettings = live.map((p, i) => `<part id="${i + 2}" subtype="normal_part"><metadata key="name" value="${esc(p.name)}"/><metadata key="extruder" value="${palette.indexOf(p.color.toUpperCase()) + 1}"/><metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/></part>`).join('');
+  const modelSettings = `<?xml version="1.0" encoding="UTF-8"?><config><object id="${asmId}"><metadata key="name" value="${esc(opts.title ?? 'model')}"/><metadata key="extruder" value="1"/>${partSettings}</object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="${asmId}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance></plate></config>`;
+  const projectSettings = JSON.stringify({
+    nozzle_diameter: ['0.4'],
+    filament_colour: palette,
+    filament_type: palette.map(() => 'PLA'),
+    filament_settings_id: palette.map(() => 'Generic PLA'),
+    filament_diameter: palette.map(() => '1.75'),
+    filament_vendor: palette.map(() => 'Generic'),
+  });
   return zipSync({
+    'Metadata/model_settings.config': strToU8(modelSettings),
+    'Metadata/project_settings.config': strToU8(projectSettings),
     '[Content_Types].xml': strToU8(contentTypes),
     '_rels/.rels': strToU8(rels),
     '3D/3dmodel.model': strToU8(model),
