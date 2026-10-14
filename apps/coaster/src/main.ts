@@ -214,7 +214,7 @@ showCorner(); showPatternRows(); showCork(); syncSvgControls(); refreshPartList(
 const fileBase = () => slug(`sottobicchiere-${state.shape}-${Math.round(state.size)}mm`);
 const exportButtons = [
   button({ label: 'STL', icon: ICONS.download, onClick: () => { download(toSTL(separated?separateParts(mountParts):parts), `${fileBase()}.stl`, 'model/stl'); toast(separated?'STL scaricato con i collegamenti dei pezzi separati':'STL scaricato (pezzi uniti, un colore)'); } }),
-  button({ label: '3MF multicolore', icon: ICONS.download, variant: 'primary', onClick: () => { download(to3MF(separated ? separateParts(mountParts) : parts, { title: fileBase() }), `${fileBase()}.3mf`, 'model/3mf'); toast('3MF scaricato: assegna un filamento a ogni pezzo nello slicer'); } }),
+  button({ label: '3MF multicolore', icon: ICONS.download, variant: 'primary', onClick: () => { download(to3MF(separated ? separateParts(mountParts) : parts, { title: fileBase() }), `${fileBase()}.3mf`, 'model/3mf'); toast('3MF scaricato con colori e filamenti assegnati'); } }),
 ];
 exportButtons.forEach((b) => { b.disabled = true; });
 shell.exportBar.append(...exportButtons);
