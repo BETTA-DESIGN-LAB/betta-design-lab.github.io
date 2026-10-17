@@ -64,6 +64,31 @@ for (const shape of shapes) for (const pattern of patterns) for (const patternMo
   if (ms > 1500) fail(`${label}: troppo lento (${ms.toFixed(0)} ms)`);
 }
 
+// Senza bordo gli anelli arrivano al contorno anche disattivando solo l'altezza.
+for (const shape of shapes) for (const patternMode of ['inlay', 'relief', 'engrave'] as const)
+for (const rim of [{ rimWidth: 0, rimHeight: 1.2 }, { rimWidth: 3, rimHeight: 0 }]) {
+  runs++;
+  const p = { ...DEFAULTS, shape, pattern: 'rings' as const, patternMode, ...rim };
+  const result = buildCoaster(M, p);
+  const reference = buildCoaster(M, { ...p, pattern: 'none' });
+  const whole = bounds(reference.parts);
+  if (patternMode !== 'engrave') {
+    const motif = result.parts.find(part => part.id === 'pattern');
+    if (!motif) { fail(`${shape}/${patternMode}: motivo senza bordo assente`); continue; }
+    const edge = bounds([motif]);
+    for (const axis of [0, 1]) for (const end of ['min', 'max'] as const)
+      if (Math.abs(edge[end][axis] - whole[end][axis]) > 0.01)
+        fail(`${shape}/${patternMode}: fascia vuota senza bordo`);
+  }
+  for (const part of result.parts) {
+    const mesh = new M.Mesh({ numProp: 3, vertProperties: part.mesh.positions, triVerts: part.mesh.indices });
+    mesh.merge();
+    const solid = new M.Manifold(mesh);
+    if (solid.status() !== 'NoError' || solid.volume() <= 0) fail(`${shape}/${patternMode}: bordo aperto non valido`);
+    solid.delete();
+  }
+}
+
 // Gli export producono file non vuoti e un 3MF che è uno zip.
 const { parts } = buildCoaster(M, DEFAULTS);
 const stl = toSTL(parts);
