@@ -1,3 +1,4 @@
+import { activeDividers, dividerRect, interiorSize } from './interior.ts';
 import type {SvgArtwork} from '../../coaster/src/svg.ts';
 import { Scope, toMeshData, type ManifoldToplevel, type Part, type CrossSection } from '@bdl/geometry';
 import { FACE_ROTATION, FACES, validateDecorations, type Decoration } from './decoration.ts';
@@ -17,7 +18,7 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
     const outer = rounded(p.width,p.depth,p.radius);
     const trayOuter=drawer?s.t(rounded(p.width-2*p.wall-2*p.clearance,p.depth-p.wall-p.clearance,Math.max(0,p.radius-p.wall)).translate([0,-p.wall/2])):outer;
     const trayInner=s.t(trayOuter.offset(-p.wall,'Round',2,64));
-    const trayWidth=drawer?p.width-2*p.wall-2*p.clearance:p.width, trayDepth=drawer?p.depth-p.wall-p.clearance:p.depth;
+    const trayWidth=drawer?p.width-2*p.wall-2*p.clearance:p.width;
     const trayHeight=drawer?p.height-2*p.wall-p.clearance:p.height;
     const track = s.t(outer.offset(-p.wall + 0.8, 'Round', 2, 64));
     const trackZ = p.height - 3.8;
@@ -34,15 +35,14 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
       if (ribs.length) body = s.t(body.add(s.t(M.Manifold.union(ribs))));
     }
     const dividerHeight = (sliding?trackZ:trayHeight-3) - p.floor - 0.8;
-    for (let i = 1; i < (p.dividers ? p.columns : 1); i++) {
-      const x = -trayWidth / 2 + p.wall + i * (trayWidth - 2 * p.wall) / p.columns;
-      const section = s.t(s.t(rect(p.wall, p.depth).translate([x, 0])).intersect(trayInner));
-      body = s.t(body.add(extrude(section, dividerHeight + 0.2, p.floor - 0.2)));
-    }
-    for (let i = 1; i < (p.dividers ? p.rows : 1); i++) {
-      const y = -trayDepth / 2 + p.wall + i * (trayDepth - 2 * p.wall) / p.rows - (drawer?p.wall/2:0);
-      const section = s.t(s.t(rect(p.width, p.wall).translate([0, y])).intersect(trayInner));
-      body = s.t(body.add(extrude(section, dividerHeight + 0.2, p.floor - 0.2)));
+    const interior = interiorSize(p);
+    for (const divider of activeDividers(p)) {
+      const r = dividerRect(divider, p.wall);
+      const section = s.t(s.t(rect(r.width, r.depth).translate([
+        -interior.width / 2 + r.x + r.width / 2,
+        interior.centerY + interior.depth / 2 - r.y - r.depth / 2,
+      ])).intersect(trayInner));
+      if (!section.isEmpty()) body = s.t(body.add(extrude(section, dividerHeight + 0.2, p.floor - 0.2)));
     }
     let sleeve = extrude(outer,p.height);
     if(drawer) {

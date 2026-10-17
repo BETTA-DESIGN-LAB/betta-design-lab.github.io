@@ -1,3 +1,4 @@
+import {interiorEditor} from './interior-editor.ts';
 import {labelArtwork} from './label.ts';
 import {importArtwork} from '../../keycap/src/artwork.ts';
 import {receiveSvg} from '../../shared/svg-transfer.ts';
@@ -79,7 +80,16 @@ const boxFields=section('Modello',models.root,stackLid.root,ribs.root,drawerHint
 const measureFields=section('Misure esterne del corpo',customSize,range('height','Altezza del corpo',18,130),corners.root,radiusControl,el('p',{class:'bdl-hint'},'Piedi, coperchio e nervature possono aumentare l’ingombro. Le scatole che superano il piatto non vengono tagliate: riduci le celle o usa un piatto più grande.'));
 controls.push(()=>{gridDimensions.textContent=`Griglia ${state.gridColumns*42} × ${state.gridRows*42} mm · corpo scatola ${state.width} × ${state.depth} mm`;gridFields.hidden=!state.gridfinity;customSize.hidden=state.gridfinity;stackLid.root.hidden=state.model!=='stackable';radiusControl.hidden=state.radius===0;ribs.root.hidden=state.gridfinity;const gridOnly=state.gridfinity&&state.gridOutput==='grid';boxFields.hidden=gridOnly;measureFields.hidden=gridOnly;editor.root.hidden=gridOnly;});
 const fitSection=section('Spessori e incastro',range('wall','Spessore pareti',2,4,0.2),range('floor','Spessore fondo',1.6,4,0.2),range('clearance','Gioco degli incastri per lato',0.15,0.5,0.05),el('p',{class:'bdl-hint'},'Prima prova una scatola piccola. Aumenta il gioco se cassetto o coperchio scorrono troppo stretti.'));
-const dividerSection=section('Divisori interni',dividers.root,range('columns','Colonne',1,6,1,''),range('rows','Righe',1,6,1,''),el('p',{class:'bdl-hint'},'1 × 1 lascia un unico vano. I divisori fanno parte del corpo o del cassetto.'));
+let interiorTimer: ReturnType<typeof setTimeout>;
+const interior=interiorEditor(()=>state,patch=>{
+  state=sanitize({...state,...patch} as Params);controls.forEach(c=>c());
+  exports.forEach(b=>b.disabled=true);singleSTL.disabled=true;
+  clearTimeout(interiorTimer);interiorTimer=setTimeout(schedule,120);
+});
+const equalDividers=el('div',{},range('columns','Colonne',1,6,1,''),range('rows','Righe',1,6,1,''));
+controls.push(()=>{interior.sync();equalDividers.hidden=!state.dividers||state.interiorMode!=='automatic';});
+const dividerSection=section('Divisori interni',dividers.root,interior.root,equalDividers);
+
 controls.push(()=>{const gridOnly=state.gridfinity&&state.gridOutput==='grid';fitSection.hidden=gridOnly;dividerSection.hidden=gridOnly;});
 shell.panel.append(
   section('Gridfinity',gridToggle.root,gridFields),boxFields,labelSection,measureFields,
