@@ -1,3 +1,4 @@
+import './test-box-interior.ts';
 import './test-export.ts';
 import './test-vector.ts';
 import './test-lamp.ts';
