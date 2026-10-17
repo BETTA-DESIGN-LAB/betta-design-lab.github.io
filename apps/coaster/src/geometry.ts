@@ -31,23 +31,25 @@ export function buildCoaster(M: ManifoldToplevel, p: CoasterParams, artwork?: Sv
 
     // Base + bordo rialzato.
     let base = s.t(shape.extrude(p.baseHeight));
-    if (p.rimWidth > 0 && p.rimHeight > 0) {
+    const hasRim = p.rimWidth > 0 && p.rimHeight > 0;
+    if (hasRim) {
       const inner = s.t(shape.offset(-p.rimWidth, 'Round', 2, 64));
       const ring = s.t(shape.subtract(inner));
       const rim = s.t(s.t(ring.extrude(p.rimHeight + 0.01)).translate([0, 0, p.baseHeight - 0.01]));
       base = s.t(Manifold.union(base, rim));
     }
 
-    // Area utile per il motivo: dentro il bordo, con un piccolo margine.
-    const margin = p.rimWidth > 0 ? p.rimWidth + 1 : 3;
-    const field = s.t(shape.offset(-margin, 'Round', 2, 64));
+    // Senza bordo il motivo usa tutta la sagoma, senza una fascia vuota riservata.
+    const margin = hasRim ? p.rimWidth + 1 : 0;
+    const field = margin > 0 ? s.t(shape.offset(-margin, 'Round', 2, 64)) : shape;
 
     // Incavo sotto per sughero/feltro.
     let corkDepth = 0;
     if (p.corkRecess) {
       corkDepth = Math.min(p.corkDepth, p.baseHeight - MIN_FLOOR);
       if (corkDepth < p.corkDepth) warnings.push('Incavo sughero ridotto: la base è troppo sottile.');
-      const pocket2d = s.t(shape.offset(-(margin + 1), 'Round', 2, 64));
+      const corkMargin = (p.rimWidth > 0 ? p.rimWidth + 1 : 3) + 1;
+      const pocket2d = s.t(shape.offset(-corkMargin, 'Round', 2, 64));
       const pocket = s.t(s.t(pocket2d.extrude(corkDepth + 0.01)).translate([0, 0, -0.01]));
       base = s.t(base.subtract(pocket));
     }
@@ -119,7 +121,7 @@ function patternSection(M: ManifoldToplevel, s: Scope, p: CoasterParams, field: 
     case 'rings': {
       // Anelli che seguono la forma (tondi in un tondo, esagonali in un esagono…).
       const rings: CrossSection[] = [];
-      for (let d = gap * 0.5; d < R; d += gap) {
+      for (let d = p.rimWidth > 0 && p.rimHeight > 0 ? gap * 0.5 : 0; d < R; d += gap) {
         const outer = s.t(field.offset(-d, 'Round', 2, 64));
         if (outer.isEmpty()) break;
         const inner = s.t(field.offset(-d - w, 'Round', 2, 64));
