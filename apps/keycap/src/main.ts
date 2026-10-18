@@ -1,5 +1,7 @@
 import {receiveSvg} from '../../shared/svg-transfer.ts';
 let mountParts: import('@bdl/geometry').Part[] = [];
+let mountDirty = true;
+function prepareMount(){if(!mountDirty)return;const result=state.product==='clicker'?{parts:assemblySeats(M,parts),warnings:[]}:assemblyConnections(M,parts,state.connection);mountParts=result.parts;connectionWarnings=result.warnings;mountDirty=false;}
 import '@bdl/ui-kit/style.css';
 import wasmUrl from 'manifold-3d/manifold.wasm?url';
 import { assemblyConnections, assemblySeats, hasConnectionArtwork, loadManifold, bounds, type Part } from '@bdl/geometry';
@@ -8,7 +10,7 @@ import { toSTL, to3MF, download, slug } from '@bdl/export';
 import { zipSync } from 'fflate';
 import {
   connectionPicker, appShell, section, slider, segmented, toggle, colorPicker, button, iconButton,
-  el, toast, panelFooter, readHashState, writeHashState, rafThrottle, ICONS,
+  el, toast, panelFooter, readHashState, writeHashState, ICONS,
 } from '@bdl/ui-kit';
 import { separateParts } from '../../coaster/src/parts.ts';
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
@@ -43,8 +45,14 @@ const set = <K extends keyof Params>(key: K, value: Params[K]) => {
   if (key === 'product') state.size = value === 'keycap' ? 18 : 35;
   if (key === 'shape' && value === 'blocks') { state.product = 'clicker'; state.keychain = true; }
   if (key === 'shape' && value === 'stl') state.product='clicker';
+  if (key === 'shape' && value === 'artwork') state.designScale=100;
   if (key === 'shape' && value === 'keys') { state.product = 'clicker'; state.size = 22; state.keychain = true; }
-  state = sanitize({ ...state, [key]: value }); renderControls(); schedule();
+  state = sanitize({ ...state, [key]: value }); renderControls();
+  if (['baseColor','capColor','artColor'].includes(String(key)) && parts.length) {
+    const recolor=(part:Part):Part=>({...part,color:colors[part.id]??(part.id==='base'?state.baseColor:part.id.startsWith('cap')?state.capColor:state.artColor)});
+    parts=parts.map(recolor);mountParts=mountParts.map(recolor);show();writeHashState(state,DEFAULTS);return;
+  }
+  schedule();
 };
 const hint = el('p', { class: 'bdl-hint' }, 'Nessun disegno caricato.');
 const file = el('input', { type: 'file', accept: '.svg,.png,.jpg,.jpeg,.webp', id: 'keycap-artwork' });
@@ -56,6 +64,7 @@ async function loadFile(next: File) {
     const result = await importArtwork(next, threshold);
     if (token !== generation) return;
     artwork = result; sourceFile = next;
+    if (state.shape === 'artwork') state.designScale=100;
     Object.keys(colors).forEach((key) => delete colors[key]);
     hint.textContent = result.name; rebuild();
   } catch (error) {
@@ -66,9 +75,12 @@ file.addEventListener('change', () => { const next = file.files?.[0]; if (next) 
 const list = el('div', { class: 'bdl-choice-grid', role: 'group', 'aria-label': 'Pezzi del clicker' });
 const partColor = colorPicker({ label: 'Colore pezzo selezionato', value: state.artColor, onChange: (color) => {
   if (!selected) { toast('Seleziona prima un pezzo'); return; }
-  colors[selected] = color; schedule();
+  colors[selected] = color;
+  parts=parts.map(part=>part.id===selected?{...part,color}:part);
+  mountParts=mountParts.map(part=>part.id===selected?{...part,color}:part);show();
 } });
 const selectedSTL = button({ label: 'STL selezionato', onClick: () => {
+  prepareMount();
   const part = mountParts.find((item) => item.id === selected);
   if (part) download(toSTL([printPart(part)]), `${slug(part.name)}.stl`, 'model/stl');
 } });
@@ -206,6 +218,7 @@ function select(id: string) {
   for (const node of list.querySelectorAll('button')) node.setAttribute('aria-pressed', String(node.dataset.part === selected));
 }
 function show() {
+  if(view==='separate')prepareMount();
   connections.refresh();if(view==='separate'&&connectionWarnings.length)shell.setStatus(connectionWarnings.join(' '),'warn');
   shown = view === 'assembled' ? parts.map(p=>{if(state.shape!=='stl'||!pressed||p.id==='base')return p;const positions=new Float32Array(p.mesh.positions);for(let i=2;i<positions.length;i+=3)positions[i]-=state.mxTravel;return {...p,mesh:{...p.mesh,positions}};}) : separateParts(mountParts.map(printPart));
   viewer.setParts(shown); select(selected);
@@ -226,7 +239,7 @@ function rebuild() {
     });
     const result = state.shape==='stl'?(stlMesh?buildSTLClicker(M,state,stlMesh):(()=>{throw new Error('Carica uno STL per scegliere il taglio.');})()):buildKeycap(M, state, artwork, lettering);
     if (state.mode === 'relief' && (artwork || lettering.some(Boolean))) result.warnings.push('Rilievo: valuta i supporti nel programma di stampa. Per stampare a faccia in giù senza dislivelli scegli intarsio.');
-    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); const connected=state.product==='clicker'?{parts:assemblySeats(M,parts),warnings:[]}:assemblyConnections(M,parts,state.connection);mountParts=connected.parts;connectionWarnings=connected.warnings;
+    parts = result.parts.map((part) => ({ ...part, color: colors[part.id] ?? part.color })); mountParts=parts;mountDirty=true;connectionWarnings=[];
     list.replaceChildren(...parts.map((part) => {
       const b = button({ label: part.name, size: 'sm', onClick: () => select(part.id) }); b.dataset.part = part.id; return b;
     }));
@@ -240,13 +253,15 @@ function rebuild() {
 }
 const exports = [
   button({ label: 'STL separati (ZIP)', onClick: () => {
+    prepareMount();
     const files: Record<string, Uint8Array> = {}; for (const part of mountParts) files[`${slug(part.name)}.stl`] = toSTL([printPart(part)]);
     download(zipSync(files), 'clicker-stl.zip', 'application/zip');
   } }),
-  button({ label: '3MF di stampa', variant: 'primary', onClick: () => download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf') }),
+  button({ label: '3MF di stampa', variant: 'primary', onClick: () => { prepareMount(); download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf'); } }),
 ];
 shell.exportBar.append(...exports);
-const rebuildNextFrame = rafThrottle(rebuild);
+let rebuildTimer:ReturnType<typeof setTimeout>;
+const rebuildNextFrame=()=>{clearTimeout(rebuildTimer);rebuildTimer=setTimeout(rebuild,120);};
 const schedule = () => { exports.forEach(b => b.disabled = true); selectedSTL.disabled = true; shell.setStatus('Aggiorno il modello…', 'busy'); rebuildNextFrame(); };
 await receiveSvg(async incoming=>{artwork=await importArtwork(incoming,threshold);sourceFile=undefined;hint.textContent=incoming.name;state=sanitize({...state,shape:'square'});});
 renderControls();
