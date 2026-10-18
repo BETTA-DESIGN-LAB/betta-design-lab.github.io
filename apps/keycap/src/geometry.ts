@@ -1,3 +1,4 @@
+import { artworkSection } from '../../shared/artwork-geometry.ts';
 import { Scope, outline, toMeshData, type Part, type ManifoldToplevel, type CrossSection, type Manifold } from '@bdl/geometry';
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
 import { sanitize, readKeyLabels, type Params } from './params.ts';
@@ -25,24 +26,25 @@ export function buildKeycap(M: ManifoldToplevel, input: Params, artwork?: SvgArt
     };
     let drawing: CrossSection | undefined;
     if (artwork) {
-      const regions = artwork.shapes.map((rings) => s.t(C.ofPolygons(rings, 'EvenOdd')));
-      drawing = s.t(C.union(regions));
+      drawing = artworkSection(M, s, artwork);
     }
     let capOutline: CrossSection;
+    let artworkSize = p.size;
     if (p.shape === 'blocks') capOutline = blockOutline(M, s, readBlocks(p.blockData));
     else if (p.shape === 'artwork') {
       if (!artwork || !drawing) throw new Error('Carica un disegno prima di usare la sagoma personalizzata.');
-      const filled = artwork.filledShapes ?? artwork.shapes;
-      if (!filled.length) throw new Error('La sagoma richiede aree piene.');
-      const cs = s.t(C.union(filled.map((rings) => s.t(C.ofPolygons(rings, 'EvenOdd')))));
-      const scaled = s.t(cs.scale(p.size));
-      // Il nucleo continuo sostiene tutti gli switch anche su immagini strette.
-      capOutline = s.t(s.t(scaled.offset(1, 'Round', 2, 48)).add(outline(M, s, 'square', 20 + (p.switches - 1) * p.spacing, 3)));
-      const components = capOutline.decompose(); components.forEach((c) => s.t(c));
-      if (components.length !== 1) throw new Error('La sagoma ha isole separate: usa una forma standard oppure collega gli elementi.');
-      warnings.push('La sagoma include un nucleo di sostegno per gli switch.');
+      const silhouette = artworkSection(M, s, artwork, true);
+      const footprints = s.t(C.union(positions.map(x => s.t(square(18.4, 18.4).translate([x, p.switchY])))));
+      let size = p.size;
+      capOutline = s.t(silhouette.scale(size));
+      while (s.t(footprints.subtract(capOutline)).area() > 0.01 && size < 300) {
+        size *= 1.12;
+        capOutline = s.t(silhouette.scale(size));
+      }
+      artworkSize = size;
+      if (size > p.size) warnings.push(`Sagoma ingrandita a ${size.toFixed(1)} mm per ospitare lo switch senza alterare il contorno.`);
     } else capOutline = outline(M, s, p.shape, p.size, 3);
-    if (p.shape === 'blocks' || p.switchX !== 0 || p.switchY !== 0) {
+    if (p.shape === 'blocks' || p.shape === 'artwork' || p.switchX !== 0 || p.switchY !== 0) {
       for (const x of positions) {
         const footprint = s.t(square(18.4, 18.4).translate([x, p.switchY]));
         if (s.t(footprint.subtract(capOutline)).area() > 0.01) throw new Error('Uno switch è troppo vicino al bordo. Spostalo oppure ingrandisci il blocco che lo ospita.');
@@ -103,8 +105,9 @@ export function buildKeycap(M: ManifoldToplevel, input: Params, artwork?: SvgArt
       cap = s.t(cap.subtract(solid(at, 3.7, capZ - 4)));
     }
     if (drawing) {
-      const design = s.t(drawing.scale(p.size * p.designScale / 100));
-      const clipped = s.t(design.intersect(s.t(capOutline.offset(-0.3, 'Round', 2, 48))));
+      const design = s.t(drawing.scale(artworkSize * p.designScale / 100));
+      const field = p.shape === 'artwork' ? capOutline : s.t(capOutline.offset(-0.3, 'Round', 2, 48));
+      const clipped = s.t(design.intersect(field));
       if (clipped.isEmpty()) warnings.push('Il disegno non interseca il pulsante.');
       else {
         const z = p.mode === 'relief' ? capZ + p.topThickness : capZ + p.topThickness - p.decorationDepth;
