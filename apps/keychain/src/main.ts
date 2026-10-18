@@ -74,19 +74,23 @@ function paintControls(){controls.replaceChildren();
  slider({label:'Sposta in alto / basso',min:-60,max:60,value:state.y,unit:'mm',onInput:v=>set('y',v)}).root,
  slider({label:'Rotazione',min:-180,max:180,value:state.angle,unit:'°',onInput:v=>set('angle',v)}).root]:[])));
  if(svgBody){
- const height=slider({label:'Spessore SVG superiore',min:.4,max:2,step:.2,value:state.relief,unit:'mm',onInput:v=>set('relief',v)}).root;
- height.dataset.svgOffsetOnly='';height.hidden=state.svgOffset===0;
+ const treatment=el('select',{class:'bdl-text-input','aria-label':'Dettagli SVG',onChange:()=>{set('svgTreatment',treatment.value as Params['svgTreatment']);paintControls();}},...([['original','SVG originale'],['through','Dettagli passanti'],['engrave','Dettagli incisi'],['inlay','Dettagli a pari'],['relief','Dettagli in rilievo']] as const).map(([value,label])=>el('option',{value,selected:state.svgTreatment===value},label)));
+ const height=slider({label:state.svgTreatment==='original'?'Spessore SVG superiore':'Profondità / altezza dettagli',min:.4,max:2,step:.2,value:state.relief,unit:'mm',onInput:v=>set('relief',v)}).root;
+ height.dataset.svgOffsetOnly='';height.hidden=state.svgTreatment==='through'||(state.svgTreatment==='original'&&state.svgOffset===0);
  controls.append(section('Sagoma SVG',
- slider({label:'Offset della base',min:0,max:8,step:.2,value:state.svgOffset,unit:'mm',hint:'0: solo l’SVG originale. Aumenta per aggiungere una base sotto, con un secondo colore.',onInput:v=>{set('svgOffset',v);for(const node of controls.querySelectorAll<HTMLElement>('[data-svg-offset-only]'))node.hidden=state.svgOffset===0;}}).root,
+ el('label',{},'Dettagli SVG',treatment),
+ el('p',{class:'bdl-hint'},state.svgTreatment==='original'?'Conserva tutti i tratti e i vuoti del file.':'Il contorno esterno forma il corpo; i contorni interni diventano i dettagli. Controlla l’anteprima: alcuni file possono avere contorni ambigui.'),
+ slider({label:'Offset della base',min:0,max:8,step:.2,value:state.svgOffset,unit:'mm',hint:state.svgTreatment==='original'?'0: solo l’SVG originale. Aumenta per aggiungere una base sotto, con un secondo colore.':'Allarga il corpo lungo il contorno esterno, senza duplicare il disegno.',onInput:v=>{set('svgOffset',v);if(state.svgTreatment==='original')for(const node of controls.querySelectorAll<HTMLElement>('[data-svg-offset-only]'))node.hidden=state.svgOffset===0;}}).root,
  height,
+ state.svgTreatment==='inlay'?slider({label:'Gioco per intarsi separati',min:0,max:.4,step:.05,value:state.clearance,unit:'mm',onInput:v=>set('clearance',v)}).root:null,
  slider({label:'Scala SVG',min:10,max:100,value:state.scale,unit:'%',onInput:v=>set('scale',v)}).root,
  slider({label:'Sposta a destra / sinistra',min:-90,max:90,value:state.x,unit:'mm',onInput:v=>set('x',v)}).root,
  slider({label:'Sposta in alto / basso',min:-60,max:60,value:state.y,unit:'mm',onInput:v=>set('y',v)}).root,
  slider({label:'Rotazione',min:-180,max:180,value:state.angle,unit:'°',onInput:v=>set('angle',v)}).root));
  }
  controls.append(connections.root);connections.refresh();
- const artColor=colorPicker({label:svgBody?'SVG superiore':'Decorazione',value:state.artColor,onChange:v=>set('artColor',v)}).root;
- if(svgBody){artColor.dataset.svgOffsetOnly='';artColor.hidden=state.svgOffset===0;}
+ const artColor=colorPicker({label:svgBody?(state.svgTreatment==='original'?'SVG superiore':'Dettagli SVG'):'Decorazione',value:state.artColor,onChange:v=>set('artColor',v)}).root;
+ if(svgBody){artColor.dataset.svgOffsetOnly='';artColor.hidden=['through','engrave'].includes(state.svgTreatment)||(state.svgTreatment==='original'&&state.svgOffset===0);}
  controls.append(section('Colori',state.model==='initial'&&state.shape!=='svg'&&state.initial.trim()?colorPicker({label:'Iniziale',value:state.initialColor,onChange:v=>set('initialColor',v)}).root:null,colorPicker({label:svgBody?'Base / SVG':'Base',value:state.baseColor,onChange:v=>set('baseColor',v)}).root,artColor));
 }
 const plateLabel=el('span');const plateTools=el('div',{class:'bdl-plate-controls'});
