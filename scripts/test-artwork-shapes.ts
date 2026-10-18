@@ -59,3 +59,39 @@ for (let angle = -180; angle < 180; angle += 15) {
   } finally { solid.delete(); }
 }
 console.log('Anello sulla N: 24 posizioni lungo il contorno, sempre solidale al corpo.');
+
+// Portachiavi: sagoma fedele, senza riempire i fori o duplicare il disegno.
+const skull: SvgArtwork = { name: 'Teschio con vuoti', shapes: [[
+  [[-.5,-.5],[.5,-.5],[.5,.5],[-.5,.5]],
+  [[-.35,.1],[-.15,.1],[-.15,.3],[-.35,.3]],
+  [[.15,.1],[.35,.1],[.35,.3],[.15,.3]],
+  [[-.25,-.35],[.25,-.35],[.25,-.2],[-.25,-.2]],
+]] };
+for (const mode of ['relief','inlay','engrave'] as const) for (const svgOffset of [0, 1.6]) {
+  const scope = new Scope();
+  try {
+    const params = { ...chainDefaults, model:'svg' as const, shape:'svg' as const, loop:false, width:60, depth:50, scale:80, angle:23, x:8, y:-3, mode, svgOffset };
+    const expected = scope.t(scope.t(artworkSection(M, scope, skull).scale(40).rotate(23)).translate([8,-3]));
+    const result = keychain(M, params, { main: skull });
+    const solids = result.parts.map(part => {
+      const mesh = new M.Mesh({ numProp:3, vertProperties:part.mesh.positions, triVerts:part.mesh.indices });
+      mesh.merge();const solid=scope.t(new M.Manifold(mesh));assert.equal(solid.status(),'NoError');return solid;
+    });
+    if (svgOffset===0) {
+      assert.equal(result.parts.length,1,'Sagoma senza seconda copia');
+      const section=scope.t(solids[0].slice(params.thickness/2));
+      assert.ok(scope.t(section.subtract(expected)).area()<.001);
+      assert.ok(scope.t(expected.subtract(section)).area()<.001,'Vuoti e dettagli originali conservati');
+      assert.ok(Math.abs(solids[0].volume()-expected.area()*params.thickness)<.01);
+    } else {
+      assert.ok(result.parts.length>1,'Offset aggiunge il livello superiore');
+      assert.ok(result.parts.some(p=>p.color===params.artColor));
+      const upper=scope.t(M.Manifold.union(solids.slice(1)));
+      const section=scope.t(upper.slice(params.thickness+params.relief/2));
+      assert.ok(scope.t(section.subtract(expected)).area()<.001);
+      assert.ok(scope.t(expected.subtract(section)).area()<.001,'SVG superiore non ridotto né spostato');
+      assert.ok(Math.abs(bounds(result.parts).max[2]-params.thickness-params.relief)<.001);
+    }
+  } finally { scope.free(); }
+}
+console.log('Portachiavi SVG: pieni/vuoti fedeli, nessun doppione, offset a due livelli allineati verificati.');
