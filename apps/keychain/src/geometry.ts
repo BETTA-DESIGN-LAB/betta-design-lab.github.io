@@ -19,6 +19,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  const extra=design.extra?s.t(s.t(fit(design.extra,p.extraSize,p.extraSize).rotate(p.extraAngle)).translate([p.extraX,p.extraY])):null;
  let base:CrossSection;
  let svgDrawing:CrossSection|undefined;
+ let svgDetails:CrossSection|undefined;
  if(nameOnly) {
  if(!design.main)throw new Error('Scrivi un nome.');
  const text=s.t(fit(design.main,p.width,p.depth-10).scale(p.scale/100).rotate(p.angle).translate([p.x,p.y]));const combined=extra?s.t(text.add(extra)):text;base=fillHoles(s.t(combined.offset(p.border,'Round',2,48)));
@@ -43,7 +44,21 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  svgDrawing=s.t(s.t(fit(design.main,p.width,p.depth).scale(p.scale/100).rotate(p.angle)).translate([p.x,p.y]));
  // A zero si estrude il disegno originale, inclusi fori e parti separate.
  // L'offset è una base aggiuntiva sotto lo stesso disegno, senza ridurlo.
- base=p.svgOffset>0?fillHoles(s.t(svgDrawing.offset(p.svgOffset,'Round',2,48))):svgDrawing;
+ if(p.svgTreatment==='original')base=p.svgOffset>0?fillHoles(s.t(svgDrawing.offset(p.svgOffset,'Round',2,48))):svgDrawing;
+ else {
+  // Ogni componente è un tratto chiuso: il più esterno diventa il corpo.
+  // I contorni interni separati diventano dettagli pieni, non una seconda copia.
+  const components=svgDrawing.decompose().map(c=>s.t(c));
+  const filled=components.map(c=>fillHoles(c)).sort((a,b)=>b.area()-a.area());
+  const silhouette=filled[0];
+  const inside=filled.slice(1).filter(c=>s.t(c.subtract(silhouette)).area()<.001);
+  const holes=s.t(silhouette.subtract(svgDrawing));
+  const openings=holes.decompose().map(c=>s.t(c)).filter(c=>!(inside.length&&c.area()>silhouette.area()*.5));
+  svgDetails=s.t(C.union([...inside,...openings]));
+  base=p.svgOffset>0?s.t(silhouette.offset(p.svgOffset,'Round',2,48)):silhouette;
+  if(svgDetails.isEmpty())warnings.push('Nessun dettaglio interno riconosciuto: viene usata la sagoma piena.');
+  if(filled.some(c=>s.t(c.subtract(silhouette)).area()>.001))warnings.push('Elementi esterni alla sagoma esclusi: usa SVG originale per conservarli.');
+ }
  const islands=base.decompose().map(a=>s.t(a));
  if(islands.length>1)warnings.push('L’SVG contiene elementi separati: vengono conservati. Usa una base offset se vuoi unirli.');
  }
@@ -113,7 +128,21 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  }
 
  else if(svgBody) {
- if(p.svgOffset>0&&svgDrawing)decorations.push({solid:s.t(s.t(svgDrawing.extrude(p.relief)).translate([0,0,p.thickness])),id:'Decorazione',color:p.artColor});
+ if(p.svgTreatment==='original'){
+  if(p.svgOffset>0&&svgDrawing)decorations.push({solid:s.t(s.t(svgDrawing.extrude(p.relief)).translate([0,0,p.thickness])),id:'Decorazione',color:p.artColor});
+ }else if(svgDetails&&!svgDetails.isEmpty()){
+  const details=s.t(svgDetails.intersect(base));
+  if(p.svgTreatment==='through')body=s.t(body.subtract(s.t(details.extrude(p.thickness))));
+  else {
+   const z=p.svgTreatment==='relief'?p.thickness:p.thickness-p.relief;
+   const solid=s.t(s.t(details.extrude(p.relief)).translate([0,0,z]));
+   if(p.svgTreatment!=='relief'){
+    const pocket=p.svgTreatment==='inlay'&&p.clearance>0?s.t(details.offset(p.clearance,'Round',2,32)):details;
+    body=s.t(body.subtract(s.t(s.t(pocket.extrude(p.relief+.02)).translate([0,0,z]))));
+   }
+   if(p.svgTreatment!=='engrave')decorations.push({solid,id:'Dettagli',color:p.artColor});
+  }
+ }
  }
  else {
  if(hasInitial&&p.shape!=='svg')decorate(design.initial,p.width*.65,p.depth*.72,0,0,'Iniziale',p.mode,p.initialColor);
