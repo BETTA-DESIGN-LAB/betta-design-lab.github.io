@@ -95,3 +95,22 @@ for (const mode of ['relief','inlay','engrave'] as const) for (const svgOffset o
   } finally { scope.free(); }
 }
 console.log('Portachiavi SVG: pieni/vuoti fedeli, nessun doppione, offset a due livelli allineati verificati.');
+
+// File già pieni e file a contorni: i dettagli cambiano tecnica, non posizione.
+for(const artwork of [ring,skull])for(const svgTreatment of ['through','engrave','inlay','relief'] as const)for(const svgOffset of [0,2]){
+ const scope=new Scope();try{
+  const p={...chainDefaults,model:'svg' as const,shape:'svg' as const,loop:false,width:50,depth:50,svgTreatment,svgOffset};
+  const result=keychain(M,p,{main:artwork});
+  const solids=result.parts.map(part=>{const mesh=new M.Mesh({numProp:3,vertProperties:part.mesh.positions,triVerts:part.mesh.indices});mesh.merge();const solid=scope.t(new M.Manifold(mesh));assert.equal(solid.status(),'NoError');assert.ok(solid.volume()>0);return solid;});
+  const bottom=scope.t(solids[0].slice(.2)),top=scope.t(solids[0].slice(p.thickness-.2));
+  if(svgTreatment==='through')assert.ok(Math.abs(bottom.area()-top.area())<.001,'Fori realmente passanti');
+  if(svgTreatment==='engrave'||svgTreatment==='inlay')assert.ok(bottom.area()>top.area()+1,'Sede interna con fondo');
+  if(svgTreatment==='relief'||svgTreatment==='inlay'){
+   assert.ok(solids.length>1,'Dettagli esportabili in secondo colore');
+   const upper=scope.t(M.Manifold.union(solids.slice(1)));
+   assert.ok(scope.t(upper.intersect(solids[0])).volume()<.001,'Parti senza sovrapposizioni');
+   assert.ok(Math.abs(bounds(result.parts).max[2]-(p.thickness+(svgTreatment==='relief'?p.relief:0)))<.001);
+  }else assert.equal(result.parts.length,1,'Nessun disegno duplicato');
+ }finally{scope.free();}
+}
+console.log('Dettagli SVG: 16 casi, fori passanti, incisioni con fondo, intarsi e rilievi senza doppioni.');
