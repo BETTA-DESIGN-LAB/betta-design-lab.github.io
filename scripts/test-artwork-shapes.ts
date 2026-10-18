@@ -37,3 +37,25 @@ for (const compact of [true, false]) {
   }
 }
 console.log('Sagome SVG: linee accettate, fori riempiti, originale conservato, cache e pulsanti senza offset verificati.');
+
+// L'anello scorre anche su una lettera concava, restando solidale al corpo.
+const letterN: SvgArtwork = { name: 'N', shapes: [[[
+  [-.5,-.5],[-.3,-.5],[-.3,.1],[.3,-.5],[.5,-.5],
+  [.5,.5],[.3,.5],[.3,-.1],[-.3,.5],[-.5,.5],
+]]] };
+for (let angle = -180; angle < 180; angle += 15) {
+  const result = keychain(M, { ...chainDefaults, model: 'initial', initial: 'N', text: '', shape: 'svg', width: 50, depth: 50, ringAngle: angle, ringType: 'external' }, { initial: letterN });
+  const part = result.parts.find(p => p.id === 'base')!;
+  const mesh = new M.Mesh({ numProp: 3, vertProperties: part.mesh.positions, triVerts: part.mesh.indices });
+  mesh.merge(); const solid = new M.Manifold(mesh);
+  try {
+    assert.equal(solid.status(), 'NoError');
+    const pieces = solid.decompose();
+    try { assert.equal(pieces.length, 1, `Anello scollegato dalla N a ${angle} gradi`); }
+    finally { pieces.forEach(p => p.delete()); }
+    const b = bounds([part]);
+    if (angle === 0) assert.ok(b.max[0] > 29, 'Anello spostato sul lato destro');
+    if (angle === -180) assert.ok(b.min[0] < -29, 'Anello spostato sul lato sinistro');
+  } finally { solid.delete(); }
+}
+console.log('Anello sulla N: 24 posizioni lungo il contorno, sempre solidale al corpo.');
