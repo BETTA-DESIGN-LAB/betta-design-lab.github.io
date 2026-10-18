@@ -1,3 +1,4 @@
+import { artworkSection } from '../../shared/artwork-geometry.ts';
 import { Scope,toMeshData,type ManifoldToplevel,type CrossSection,type Manifold,type Part, regularPolygon } from '@bdl/geometry';
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
 import { sanitize,type Params } from './params.ts';
@@ -10,7 +11,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  if(p.model==='initial'&&!hasInitial&&!p.text.trim())throw new Error('Scrivi una lettera, un nome oppure entrambi.');
  try {
  const C=M.CrossSection;const decorations:{solid:Manifold;id:string;color:string}[]=[];
- const section=(a:SvgArtwork,filled=false)=>{const shapes=filled?a.filledShapes??[]:a.shapes;if(!shapes.length)throw new Error('Per la sagoma SVG servono aree piene.');return s.t(C.union(shapes.map(r=>s.t(C.ofPolygons(r,'EvenOdd')))));};
+ const section=(a:SvgArtwork)=>artworkSection(M,s,a);
  const fit=(a:SvgArtwork,w:number,h:number)=>{const c=section(a),b=c.bounds(),k=Math.min(w/(b.max[0]-b.min[0]),h/(b.max[1]-b.min[1]));return s.t(c.scale([k,k]));};
  const rounded=(w:number,h:number)=>s.t(s.t(C.square([w-6,h-6],true)).offset(3,'Round',2,48));
  const fillHoles=(c:CrossSection)=>s.t(C.union(c.toPolygons().map(r=>s.t(C.ofPolygons([r],'EvenOdd')))));
@@ -35,7 +36,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  for(const addition of additions){const islands=addition.decompose().map(a=>s.t(a));for(const island of islands){const combined=s.t(base.add(island));if(combined.decompose().map(a=>s.t(a)).length>1){let aa:[number,number]=[0,0],bb:[number,number]=[0,0],distance=Infinity;for(const a of base.toPolygons().flat())for(const b of island.toPolygons().flat()){const d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d<distance){distance=d;aa=a;bb=b;}}const ends=[aa,bb].map(at=>s.t(s.t(C.circle(1,32)).translate(at)));base=s.t(combined.add(s.t(C.hull(ends))));}else base=combined;}}
  const islands=base.decompose().map(a=>s.t(a));if(islands.length>1)base=s.t(C.hull(islands));
  }
- else if(p.model==='svg' && p.shape==='svg') {if(!design.main)throw new Error('Carica un SVG.');base=fit({...design.main,shapes:design.main.filledShapes??[]},p.width,p.depth);if(base.decompose().map(a=>s.t(a)).length!==1)throw new Error('La sagoma SVG deve essere una sola forma connessa.');}
+ else if(p.model==='svg' && p.shape==='svg') {if(!design.main)throw new Error('Carica un SVG.');const silhouette=artworkSection(M,s,design.main,true),b=silhouette.bounds(),k=Math.min(p.width/(b.max[0]-b.min[0]),p.depth/(b.max[1]-b.min[1]));base=s.t(silhouette.scale(k));}
  else if(p.model==='jersey')base=s.t(s.t(C.ofPolygons([[[-.3,-.5],[.3,-.5],[.3,.1],[.48,0],[.6,.25],[.27,.5],[.12,.5],[.08,.4],[-.08,.4],[-.12,.5],[-.27,.5],[-.6,.25],[-.48,0],[-.3,.1]]])).scale([p.width/1.2,p.depth]));
  else if(p.shape==='heart')base=s.t(C.ofPolygons([Array.from({length:160},(_,i)=>{const t=i*2*Math.PI/160;return [Math.pow(Math.sin(t),3)*p.width/2,(13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t))*p.depth/32] as [number,number];})],'EvenOdd'));
  else if(p.shape==='hex')base=s.t(C.ofPolygons([regularPolygon(6,Math.min(p.width,p.depth))]));
