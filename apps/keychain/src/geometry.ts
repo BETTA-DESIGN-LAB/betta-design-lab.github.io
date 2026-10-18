@@ -51,7 +51,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  for(const polygon of base.toPolygons())for(let i=0;i<polygon.length;i++){const a=polygon[i],b=polygon[(i+1)%polygon.length];if(a[0]!==b[0]&&cx>=Math.min(a[0],b[0])&&cx<=Math.max(a[0],b[0]))edgeY=Math.max(edgeY,a[1]+(b[1]-a[1])*(cx-a[0])/(b[0]-a[0]));}
  if(!Number.isFinite(edgeY)){const top=base.toPolygons().flat().sort((a,b)=>b[1]-a[1])[0];cx=top[0];edgeY=top[1];}
  let cy=p.ringType==='internal'?edgeY-p.hole/2-p.ringWall:edgeY+p.hole/2;
- if(p.model==='music'){
+ if(p.model==='music'||p.ringType==='external'){
   const origin:[number,number]=[(bb.min[0]+bb.max[0])/2,(bb.min[1]+bb.max[1])/2],a=p.ringAngle*Math.PI/180,dir:[number,number]=[Math.cos(a),Math.sin(a)];let distance=0;
   for(const polygon of base.toPolygons())for(let i=0;i<polygon.length;i++){
    const v=polygon[i],w=polygon[(i+1)%polygon.length],sx=w[0]-v[0],sy=w[1]-v[1],qx=v[0]-origin[0],qy=v[1]-origin[1],cross=dir[0]*sy-dir[1]*sx;
