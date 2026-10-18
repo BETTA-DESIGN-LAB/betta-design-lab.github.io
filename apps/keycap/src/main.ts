@@ -66,7 +66,7 @@ async function loadFile(next: File) {
     artwork = result; sourceFile = next;
     if (state.shape === 'artwork') state.designScale=100;
     Object.keys(colors).forEach((key) => delete colors[key]);
-    hint.textContent = result.name; rebuild();
+    hint.textContent = result.name; renderControls(); rebuild();
   } catch (error) {
     if (token === generation) hint.textContent = error instanceof Error ? error.message : 'Impossibile caricare il file.';
   } finally { file.value = ''; }
