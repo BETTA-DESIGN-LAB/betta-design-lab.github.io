@@ -15,6 +15,10 @@ for(const shape of ['ghost','pumpkin','heart','star','round'] as const)for(const
   assert.equal(r.parts.length,6);assert.equal(new Set(r.parts.map(p=>p.id)).size,6);
   for(const part of r.parts){const solid=fromPart(s,part);assert.equal(solid.status(),'NoError',shape+part.id);assert.ok(solid.volume()>0);assert.ok(Math.abs(bounds([part]).min[2])<.001,'Pezzo appoggiato');assert.equal(solid.decompose().map(p=>s.t(p)).length,1,'Un solo corpo per '+shape+part.id);}
   for(const part of r.parts.slice(0,2))assert.ok(Math.abs(bounds([part]).max[2]-p.sheet)<.001,'Sagome realmente piatte');
+  if(shape==='ghost'||shape==='pumpkin'){
+   const front=fromPart(s,r.parts[0]),back=fromPart(s,r.parts[1]);
+   assert.ok(front.volume()-back.volume()<p.width*p.height*p.sheet*.08,'Solo occhi e bocca, nessun pannello rettangolare');
+  }
   if(shape==='heart'){
    const front=fromPart(s,r.parts[0]),back=fromPart(s,r.parts[1]);
    const notch=s.t(s.t(M.Manifold.cube([p.width*.005,p.height*.04,p.sheet+1],true)).translate([0,p.height*.32,p.sheet/2]));
@@ -22,6 +26,7 @@ for(const shape of ['ghost','pumpkin','heart','star','round'] as const)for(const
    assert.ok(s.t(back.intersect(notch)).volume()<.001,'Incavo del cuore libero sul retro');
   }
   const female=fromPart(s,r.parts[2]),male=fromPart(s,r.parts[3]);
+  if(shape==='pumpkin'){const peaks=s.t(male.slice(3+p.dome*.8));assert.ok(peaks.decompose().map(p=>s.t(p)).length>=3,'Spicchi della zucca separati da solchi 3D');}
   const closed=s.t(s.t(male.rotate([0,180,0])).translate([0,0,6+p.dome+p.sheet+p.clearance]));
   const collision=s.t(female.intersect(closed)).volume();assert.ok(collision<.01,`Stampi abbinati senza collisioni: ${shape} ${pattern} ${collision}`);
   const connector=fromPart(s,r.parts[4]),cap=fromPart(s,r.parts[5]);
