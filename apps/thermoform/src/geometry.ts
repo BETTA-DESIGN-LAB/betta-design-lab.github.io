@@ -18,30 +18,46 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
   if(outline.decompose().map(t).length!==1)throw new Error('La sagoma deve essere unita: collega gli elementi separati nel file.');
   outline=t(outline.simplify(.0006));
   warnings.push(p.shape==='stl'?'STL: profilo proiettato lungo Z; la superficie originale non viene riprodotta.':'SVG: contorno esterno pieno; i vuoti interni vengono riempiti per la formatura.');
+ }else if(p.shape==='ghost'){
+  // Testa tonda, braccia e lenzuolo ondulato: contorno disegnato, non un'ovale perturbata.
+  const half:Vec2[]=[[0,.5]];
+  const curve=(c1:Vec2,c2:Vec2,end:Vec2)=>{const start=half[half.length-1];for(let i=1;i<=16;i++){const u=i/16,v=1-u;half.push([v*v*v*start[0]+3*v*v*u*c1[0]+3*v*u*u*c2[0]+u*u*u*end[0],v*v*v*start[1]+3*v*v*u*c1[1]+3*v*u*u*c2[1]+u*u*u*end[1]]);}};
+  curve([.22,.5],[.29,.36],[.29,.2]);
+  curve([.30,.10],[.49,.12],[.5,-.02]);
+  curve([.5,-.12],[.39,-.15],[.33,-.1]);
+  curve([.33,-.25],[.38,-.37],[.43,-.45]);
+  curve([.32,-.48],[.28,-.33],[.21,-.39]);
+  curve([.13,-.52],[.08,-.47],[0,-.4]);
+  outline=t(C.ofPolygons([[...half,...half.slice(1,-1).reverse().map(([x,y]):Vec2=>[-x,y])]],'EvenOdd'));
+ }else if(p.shape==='pumpkin'){
+  // Lobi sovrapposti e picciolo distinto, compresi nel contorno degli stampi.
+  const lobes=[-.24,-.12,0,.12,.24].map(x=>t(t(C.circle(1,64)).scale([.27,.38-Math.abs(x)*.20]).translate([x,-.05])));
+  const stem=t(t(C.square([.14,.12],true)).translate([0,.35]));
+  outline=t(C.union([...lobes,stem]));
  }else{
   const points:Vec2[]=Array.from({length:128},(_,i)=>{const a=i*Math.PI*2/128;let x=Math.cos(a),y=Math.sin(a);
    if(p.shape==='heart'){x=Math.pow(Math.sin(a),3);y=(13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a))/17;}
    if(p.shape==='star'){const r=.77+.23*Math.cos(5*(a-Math.PI/2));x*=r;y*=r;}
-   if(p.shape==='ghost'){const r=1+.09*Math.cos(4*a);x*=r*(y<0?1.05:.88);y*=r;}
-   if(p.shape==='pumpkin'){x*=1+.045*Math.cos(6*a);y*=.86;}
    return [x,y];});outline=t(C.ofPolygons([points],'EvenOdd'));
  }
  const b=outline.bounds();outline=t(t(outline.translate([-(b.min[0]+b.max[0])/2,-(b.min[1]+b.max[1])/2])).scale([p.width/(b.max[0]-b.min[0]),p.height/(b.max[1]-b.min[1])]));
  const inner=t(outline.offset(-p.rim,'Round',2,32));if(inner.isEmpty())throw new Error('Bordo troppo grande per la sagoma.');
- const mirrored=t(outline.scale([-1,1]));const dual=t(outline.subtract(mirrored)).area()>outline.area()*.001;
+ const neckX=p.shape==='heart'?-p.width*.25:0;
+ const mirrored=t(outline.scale([-1,1]));const dual=neckX!==0||t(outline.subtract(mirrored)).area()>outline.area()*.001;
  if(dual)warnings.unshift('Profilo asimmetrico: stampi a due impronte speculari, una per il fronte e una per il retro.');
  const rings=outline.toPolygons(),bb=outline.bounds();
- let neckY=bb.max[1];for(let y=bb.max[1];y>bb.min[1];y-=.5)if(t(rect(12,1,0,y-.5).subtract(outline)).area()<.001){neckY=y;break;}
- const tab=rect(10,10,0,neckY+3);let fill=outline;
+ // Sul cuore la chiusura va sul lobo: il raccordo centrale riempirebbe la V.
+ let neckY=bb.max[1];for(let y=bb.max[1];y>bb.min[1];y-=.5)if(t(rect(12,1,neckX,y-.5).subtract(outline)).area()<.001){neckY=y;break;}
+ const tab=rect(10,10,neckX,neckY+3);let fill=outline;
  if(p.pattern!=='solid'){
   const bars:CrossSection[]=[];for(let x=-240;x<=240;x+=p.spacing)bars.push(rect(p.strand,500,x,0),rect(500,p.strand,0,x));
   let lattice=t(C.union(bars));if(p.pattern==='diagonal')lattice=t(lattice.rotate(45));
   fill=t(t(outline.subtract(inner)).add(t(lattice.intersect(inner))));
  }
- fill=t(t(fill.add(tab)).subtract(rect(4,2,0,neckY+5)));let front=fill;
+ fill=t(t(fill.add(tab)).subtract(rect(4,2,neckX,neckY+5)));let front=fill;
  if(p.face&&['ghost','pumpkin'].includes(p.shape)){
-  const eyes=t(circle(p.width*.045,-p.width*.15,p.height*.08).add(circle(p.width*.045,p.width*.15,p.height*.08)));
-  const smile=t(t(circle(p.width*.12,0,-p.height*.04).subtract(circle(p.width*.12,0,-p.height*.005))).intersect(rect(p.width*.3,p.height*.12,0,-p.height*.09)));
+  const eyes=p.shape==='pumpkin'?t(C.union([-1,1].map(sign=>t(C.ofPolygons([[[sign*p.width*.15-p.width*.06,p.height*.04],[sign*p.width*.15+p.width*.06,p.height*.04],[sign*p.width*.15,p.height*.15]]],'EvenOdd'))))):t(circle(p.width*.045,-p.width*.15,p.height*.08).add(circle(p.width*.045,p.width*.15,p.height*.08)));
+  const smile=p.shape==='pumpkin'?t(C.ofPolygons([[[-.20,-.05],[-.10,-.09],[-.06,-.05],[.02,-.10],[.08,-.05],[.20,-.05],[.12,-.16],[-.12,-.16]].map(([x,y]):Vec2=>[x*p.width,y*p.height])],'EvenOdd')):t(t(circle(p.width*.12,0,-p.height*.04).subtract(circle(p.width*.12,0,-p.height*.005))).intersect(rect(p.width*.3,p.height*.12,0,-p.height*.09)));
   const panel=t(rect(p.width*.5,p.height*.34,0,0).intersect(outline));
   front=t(t(front.add(panel)).subtract(t(eyes.add(smile))));
  }
@@ -52,7 +68,7 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  const dome=(x:number,y:number)=>p.dome*Math.sin(Math.min(1,edgeDistance(x,y,rings)/maxDistance)*Math.PI/2);
  const floor=3,gap=p.sheet+p.clearance;
  const dense=(section:CrossSection)=>t(t(section.extrude(1)).refineToLength(Math.max(2.5,Math.min(p.width,p.height)/32)));
- const flange=t(t(outline.offset(5,'Round',2,40)).add(rect(20,16,0,neckY+3)));
+ const flange=t(t(outline.offset(5,'Round',2,40)).add(rect(20,16,neckX,neckY+3)));
  const cavity=t(dense(outline).warp(v=>{const z=v[2],low=floor+p.dome-dome(v[0],v[1]);v[2]=low+z*(p.dome+floor+gap+1-low);}));
  const tabChannel=t(t(t(tab.offset(p.clearance,'Round',2,24)).extrude(p.sheet+p.clearance*2)).translate([0,0,floor+p.dome-p.clearance]));
  let female=t(t(t(flange.extrude(floor+p.dome+gap)).subtract(cavity)).subtract(tabChannel));
@@ -95,7 +111,7 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  const socket=t(t(cyl(8.2,6+p.clearance).add(thread(6,p.clearance))).add(lead));
  let cap=t(cyl(10,8).subtract(socket));const eye=t(t(circle(5).subtract(circle(2.5))).extrude(3));
  cap=t(cap.add(t(t(eye.rotate([90,0,0])).translate([0,1.5,12.5]))));put('cap','06 · Tappo con occhiello',p.moldColor,cap);
- for(const [id,solid]of [['formed-connector',connector],['formed-cap',cap]] as const)formed.push({id,name:id==='formed-cap'?'Tappo con occhiello':'Raccordo',color:p.moldColor,mesh:toMeshData(t(t(solid.rotate([-90,0,0])).translate([0,neckY+2,0])))});
+ for(const [id,solid]of [['formed-connector',connector],['formed-cap',cap]] as const)formed.push({id,name:id==='formed-cap'?'Tappo con occhiello':'Raccordo',color:p.moldColor,mesh:toMeshData(t(t(solid.rotate([-90,0,0])).translate([neckX,neckY+2,0])))});
  return {parts,formed,warnings};
  }finally{s.free();}
 }
