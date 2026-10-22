@@ -84,6 +84,13 @@
       "status": "live",
       "category": "Arredo",
       "blurb": "Lampade parametriche e da STL con base per LED Bambu Lab Kit-001."
+    },
+    {
+      "id": "thermoform",
+      "name": "Thermoform",
+      "status": "beta",
+      "category": "Creatività",
+      "blurb": "Sagome piatte, stampi bombati e chiusure per oggetti termoformati."
     }
   ]
 }
