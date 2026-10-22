@@ -54,18 +54,38 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
   let lattice=t(C.union(bars));if(p.pattern==='diagonal')lattice=t(lattice.rotate(45));
   fill=t(t(outline.subtract(inner)).add(t(lattice.intersect(inner))));
  }
- fill=t(t(fill.add(tab)).subtract(rect(4,2,neckX,neckY+5)));let front=fill;
+ fill=t(t(fill.add(tab)).subtract(rect(4,2,neckX,neckY+5)));
+ // Il ritaglio diagonale può lasciare minuscoli segmenti negli angoli delle
+ // aperture: conserva la rete collegata al bordo, senza frammenti da stampare.
+ const network=fill.decompose().map(t).filter(c=>c.area()>1e-6).sort((a,b)=>b.area()-a.area());
+ fill=network[0];let front=fill;
  if(p.face&&['ghost','pumpkin'].includes(p.shape)){
   const eyes=p.shape==='pumpkin'?t(C.union([-1,1].map(sign=>t(C.ofPolygons([[[sign*p.width*.15-p.width*.06,p.height*.04],[sign*p.width*.15+p.width*.06,p.height*.04],[sign*p.width*.15,p.height*.15]]],'EvenOdd'))))):t(circle(p.width*.045,-p.width*.15,p.height*.08).add(circle(p.width*.045,p.width*.15,p.height*.08)));
   const smile=p.shape==='pumpkin'?t(C.ofPolygons([[[-.20,-.05],[-.10,-.09],[-.06,-.05],[.02,-.10],[.08,-.05],[.20,-.05],[.12,-.16],[-.12,-.16]].map(([x,y]):Vec2=>[x*p.width,y*p.height])],'EvenOdd')):t(t(circle(p.width*.12,0,-p.height*.04).subtract(circle(p.width*.12,0,-p.height*.005))).intersect(rect(p.width*.3,p.height*.12,0,-p.height*.09)));
-  const panel=t(rect(p.width*.5,p.height*.34,0,0).intersect(outline));
-  front=t(t(front.add(panel)).subtract(t(eyes.add(smile))));
+  const features=t(t(eyes.add(smile)).intersect(outline));
+  front=p.pattern==='solid'?t(front.subtract(features)):t(front.add(features));
+  // Con trame molto larghe un occhio può cadere fra i fili: un breve raccordo
+  // dello stesso spessore della trama lo tiene unito, senza un pannello pieno.
+  let components=front.decompose().map(t).sort((a,b)=>b.area()-a.area());
+  if(components.length>1){front=components[0];for(const island of components.slice(1)){
+   let distance=Infinity,from:Vec2=[0,0],to:Vec2=[0,0];
+   for(const a of front.toPolygons().flat())for(const b of island.toPolygons().flat()){const d=(a[0]-b[0])**2+(a[1]-b[1])**2;if(d<distance){distance=d;from=a;to=b;}}
+   const bridge=t(C.hull([circle(p.strand/2,...from),circle(p.strand/2,...to)]));front=t(t(front.add(island)).add(bridge));
+  }}
  }
  const put=(id:string,name:string,color:string,solid:Manifold)=>{if(solid.status()!=='NoError'||solid.isEmpty())throw new Error('Geometria non valida: '+name);const bodies=solid.decompose().map(t).filter(m=>m.volume()>1e-6);if(bodies.length!==1)throw new Error('La sagoma genera parti scollegate: '+name+'. Usa un contorno più semplice.');parts.push({id,name,color,mesh:toMeshData(bodies[0])});};
  put('front','01 · Sagoma piatta fronte',p.color,t(front.extrude(p.sheet)));
  put('back','02 · Sagoma piatta retro',p.color,t(t(fill.scale([-1,1])).extrude(p.sheet)));
  let maxDistance=1;for(let x=bb.min[0];x<=bb.max[0];x+=p.width/18)for(let y=bb.min[1];y<=bb.max[1];y+=p.height/18)if(t(circle(.01,x,y).intersect(outline)).area()>0)maxDistance=Math.max(maxDistance,edgeDistance(x,y,rings));
- const dome=(x:number,y:number)=>p.dome*Math.sin(Math.min(1,edgeDistance(x,y,rings)/maxDistance)*Math.PI/2);
+ const dome=(x:number,y:number)=>{
+  const base=p.dome*Math.sin(Math.min(1,edgeDistance(x,y,rings)/maxDistance)*Math.PI/2);
+  if(p.shape!=='pumpkin')return base;
+  // Volume ellissoidale con cinque spicchi verticali: i solchi sono geometria
+  // reale, condivisa da matrice, convesso e anteprima delle metà formate.
+  const ellipse=Math.sqrt(Math.max(0,1-(x/(p.width*.5))**2-((y+p.height*.048)/(p.height*.452))**2));
+  const ribs=.87+.13*Math.cos(8*Math.PI*x/p.width);
+  return Math.min(base,p.dome*ellipse*ribs);
+ };
  const floor=3,gap=p.sheet+p.clearance;
  const dense=(section:CrossSection)=>t(t(section.extrude(1)).refineToLength(Math.max(2.5,Math.min(p.width,p.height)/32)));
  const flange=t(t(outline.offset(5,'Round',2,40)).add(rect(20,16,neckX,neckY+3)));
