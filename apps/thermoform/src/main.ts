@@ -5,6 +5,7 @@ import {toSTL,to3MF,download} from '@bdl/export';
 import {zipSync,strToU8} from 'fflate';
 import {appShell,section,slider,colorPicker,button,iconButton,toast,panelFooter,readHashState,writeHashState,ICONS,el,segmented,toggle} from '@bdl/ui-kit';
 import {parseSvg,type SvgArtwork} from '../../coaster/src/svg.ts';
+import {receiveSvg} from '../../shared/svg-transfer.ts';
 import {parseSTL} from '../../keycap/src/stl.ts';
 import {arrange,currentPlacement,type Placements} from '../../box/src/placement.ts';
 import {sanitize,DEFAULTS,type Params} from './params.ts';
@@ -18,15 +19,26 @@ const controls=el('div'),plateLabel=el('span');shell.panel.append(controls,panel
 const exports:HTMLButtonElement[]=[];
 function invalidate(){exports.forEach(b=>b.disabled=true);clearTimeout(timer);request++;}
 function set<K extends keyof Params>(key:K,value:Params[K]){state=sanitize({...state,[key]:value});invalidate();timer=setTimeout(rebuild,220);}
+async function loadSvg(file:File){
+ if(file.size>5_000_000)throw new Error('SVG troppo grande: massimo 5 MB.');
+ const id=++request;
+ const next=validateArtwork(parseSvg(await file.text(),file.name));
+ if(id!==request)return;
+ invalidate();state=sanitize({...state,shape:'svg'});artwork=next;files.svg=next;
+ pinned={};plate=0;paint();rebuild();
+}
 function paint(){controls.replaceChildren();
  const choice=el('select',{class:'bdl-text-input','aria-label':'Sagoma',onChange:()=>{set('shape',choice.value as Params['shape']);artwork=files[state.shape];pinned={};paint();}},...([['ghost','Fantasmino'],['pumpkin','Zucca'],['heart','Cuore'],['star','Stella'],['round','Tonda'],['svg','Il tuo SVG'],['stl','Il tuo STL']] as const).map(([value,label])=>el('option',{value,selected:state.shape===value},label)));
- const shape=section('La tua forma',el('label',{},'Sagoma',choice));
+ const svgUpload=el('input',{type:'file',accept:'.svg,image/svg+xml','aria-label':'Carica la tua sagoma SVG',onChange:async()=>{const file=svgUpload.files?.[0];if(!file)return;try{await loadSvg(file);}catch(e){toast(e instanceof Error?e.message:String(e));}finally{svgUpload.value='';}}});
+ const shape=section('La tua forma',el('label',{},'Sagoma',choice),el('label',{},'Usa una sagoma SVG',svgUpload),el('p',{class:'bdl-hint'},'Carica il tuo disegno: sagome, stampi e chiusure si adattano automaticamente.'),el('a',{href:'../image-svg/'},'Converti prima un’immagine in SVG'));
+
  if(state.shape==='svg'||state.shape==='stl'){
   const input=el('input',{type:'file',accept:state.shape==='svg'?'.svg':'.stl','aria-label':'Carica '+state.shape.toUpperCase(),onChange:async()=>{invalidate();try{const file=input.files?.[0];if(!file)return;const id=++request;
-   if(state.shape==='svg'){if(file.size>5_000_000)throw new Error('SVG troppo grande: massimo 5 MB.');const a=validateArtwork(parseSvg(await file.text(),file.name));if(id!==request)return;artwork=a;files.svg=a;paint();rebuild();}
+   if(state.shape==='svg'){await loadSvg(file);}
    else{shell.setStatus('Leggo il profilo STL…');worker.postMessage({id,kind:'stl',mesh:parseSTL(await file.arrayBuffer())});}
   }catch(e){result=undefined;viewer.setParts([]);shell.setStatus(String(e),'warn');}}});
-  shape.append(input,el('p',{class:'bdl-hint'},artwork?.name??'Nessun file caricato'),el('p',{class:'bdl-hint'},state.shape==='stl'?'Orienta lo STL prima del caricamento: usiamo il profilo visto dall’alto (Z), con bombatura regolabile. Non riproduciamo la superficie originale.':'Un solo contorno esterno unito. I vuoti del disegno vengono riempiti; la trama viene creata qui.'));
+  if(state.shape==='stl')shape.append(input);
+  shape.append(el('p',{class:'bdl-hint'},artwork?.name??'Nessun file caricato'),el('p',{class:'bdl-hint'},state.shape==='stl'?'Orienta lo STL prima del caricamento: usiamo il profilo visto dall’alto (Z), con bombatura regolabile. Non riproduciamo la superficie originale.':'Un solo contorno esterno unito. I vuoti del disegno vengono riempiti; la trama viene creata qui.'));
  }
  if(['ghost','pumpkin'].includes(state.shape))shape.append(toggle({label:'Viso sul fronte',value:state.face,onChange:v=>set('face',v)}).root);
  const restore=el('input',{type:'file',accept:'.json','aria-label':'Apri progetto Thermoform',onChange:async()=>{try{const f=restore.files?.[0];if(!f)return;if(f.size>5_000_000)throw new Error('Progetto troppo grande.');const data=JSON.parse(await f.text());if(data.version!==1||!data.params)throw new Error('Progetto non valido.');const next=sanitize(data.params),main=validateArtwork(data.artwork),svg=validateArtwork(data.files?.svg),stl=validateArtwork(data.files?.stl),positions=readPlacements(data.pinned);invalidate();state=next;artwork=main;files.svg=svg;files.stl=stl;plateSize=[180,220,256].includes(data.plateSize)?data.plateSize:256;pinned=positions;plate=0;paint();rebuild();}catch(e){toast(String(e));}}});
@@ -46,4 +58,5 @@ const guide=`BETTA DESIGN LAB · THERMOFORM — PROTOTIPO\n\n1. Stampa fronte e 
 const base=()=>`thermoform-${state.shape}-${state.width}x${state.height}`;
 const zip=()=>{if(!result)return;const packed=arrange(result.parts,plateSize,plateSize,pinned);if(packed.oversized.length||packed.warnings.length){toast('Sistema i pezzi sul piatto prima di esportare.');return;}const entries:Record<string,Uint8Array>={'LEGGIMI-montaggio.txt':strToU8(guide),'progetto.json':strToU8(JSON.stringify({version:1,params:state,artwork,files,pinned,plateSize}))};for(const [i,parts]of packed.plates.entries())entries[`piatto-${i+1}.3mf`]=to3MF(parts,{title:base(),plateCenter:[plateSize/2,plateSize/2]});for(const part of result.parts)entries[`${part.id}.stl`]=toSTL([part]);download(zipSync(entries),base()+'.zip');};
 for(const options of [{label:'Scarica kit completo',variant:'primary' as const,onClick:zip},{label:'3MF del piatto',onClick:()=>{if(!result)return;const packed=arrange(result.parts,plateSize,plateSize,pinned);download(to3MF(packed.plates[plate]??[],{title:base()}),base()+'.3mf');}},{label:'Pezzo selezionato',onClick:()=>{const part=result?.parts.find(p=>p.id===selected);if(!part){toast('Seleziona un pezzo nella vista Kit da stampare.');return;}download(toSTL([part]),part.id+'.stl');}}]){const b=button(options);b.disabled=true;exports.push(b);shell.exportBar.append(b);}
+await receiveSvg(loadSvg);
 paint();rebuild();
