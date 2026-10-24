@@ -1,5 +1,5 @@
 import {toast} from '@bdl/ui-kit';
-export const SVG_TARGETS=[['coaster','Sottobicchieri'],['keychain','Portachiavi'],['keycap','Keycap / Fidget Clicker'],['box','Scatole e organizer'],['christmas','Natale']] as const;
+export const SVG_TARGETS=[['coaster','Sottobicchieri'],['keychain','Portachiavi'],['keycap','Keycap / Fidget Clicker'],['box','Scatole e organizer'],['christmas','Natale'],['thermoform','Thermoform']] as const;
 const PREFIX='bdl-svg-transfer-';
 export function sendSvg(svg:string,name:string,target:string):void {
  if(!SVG_TARGETS.some(([id])=>id===target)||svg.length>500000)throw new Error('Destinazione o SVG non valido.');
