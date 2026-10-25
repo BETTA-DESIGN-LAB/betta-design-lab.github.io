@@ -1,15 +1,18 @@
 import {Scope,toMeshData,type ManifoldToplevel,type Manifold,type MeshData,type Part} from '@bdl/geometry';
 import {sanitize,type Params} from './params.ts';
 /** LED Kit-001: nominal Ø59 × 8 mm; adhesive mounting, no screw holes assumed. */
-export const LED={diameter:59,height:8,seatDiameter:60.4,seatHeight:8.4,neckRadius:35,fit:.2};
+export const LED={diameter:59,height:8,seatDiameter:60.4,seatHeight:8.4,neckRadius:35,fit:.2,cableSlotWidth:8,floor:3,baseHeight:14.4};
 export function build(M:ManifoldToplevel,input:Params,mesh?:MeshData):{parts:Part[],warnings:string[]}{
  const p=sanitize(input),s=new Scope();try{
  const cyl=(h:number,r:number,z=0)=>s.t(s.t(M.Manifold.cylinder(h,r,r,96)).translate([0,0,z]));
  const cube=(x:number,y:number,z:number,at:[number,number,number])=>s.t(s.t(M.Manifold.cube([x,y,z],true)).translate(at));
  let base=s.t(cyl(11.4,38).subtract(cyl(8.6,LED.seatDiameter/2,3)));
- // Neck around the LED, open from above. Exit admits the cable from the side.
+ // Il cavo completo si appoggia dall’alto insieme al LED: nessun connettore deve attraversare un foro.
  base=s.t(base.add(s.t(cyl(3,35,11.4).subtract(cyl(3.2,LED.seatDiameter/2,11.3)))));
- base=s.t(base.subtract(cube(6,45,5,[0,-32,5.5])));
+ // Scanalatura continua dal piano della sede fino oltre il collare:
+ // un tunnel chiuso non permette il montaggio del Kit-001 già cablato.
+ const slotHeight=LED.baseHeight-LED.floor+1;
+ base=s.t(base.subtract(cube(LED.cableSlotWidth,45,slotHeight,[0,-32,LED.floor+slotHeight/2])));
  for(const x of [-25,25])base=s.t(base.subtract(cube(5,10,4,[x,0,1.5])));
  let shade:Manifold,warnings=['LED Bambu Lab Kit-001 · prova l’incastro con il campione prima della lampada completa.'];
  if(p.source==='parametric'){
