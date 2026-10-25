@@ -43,11 +43,15 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}):Result{
  }
  if(!features.length)warnings.push('Piastra vuota: aggiungi testo, SVG, icona o cornice per creare un’impronta.');
  const detail=t(C.union(features));
- const mirrored=t(outline.scale([-1,1])),plateSolid=t(mirrored.extrude(p.base));
+ // La filettatura rimane identica: spessore solo locale, sotto il manico.
+ const top=11,mirrored=t(outline.scale([-1,1]));
+ const thinPlate=t(t(mirrored.extrude(p.base)).translate([0,0,top-p.base]));
+ const boss=t(t(M.Manifold.cylinder(top,10,10,96)).intersect(t(mirrored.extrude(top))));
+ const plateSolid=t(thinPlate.add(boss));
  const lead=t(M.Manifold.cylinder(1.6,7.1+p.clearance,6+p.clearance,72));
  const socket=t(attachment(M,s,p.clearance).add(lead));
  let plate=t(plateSolid.subtract(socket));
- if(!detail.isEmpty())plate=t(plate.add(t(t(t(detail.scale([-1,1])).extrude(p.relief+.05)).translate([0,0,p.base-.05]))));
+ if(!detail.isEmpty())plate=t(plate.add(t(t(t(detail.scale([-1,1])).extrude(p.relief+.05)).translate([0,0,top-.05]))));
  const kind=handleKind(p);let body:Manifold,h=kind==='palm'?12:kind==='bridge'?26:30;
  if(kind==='bridge'){
   const width=Math.max(46,Math.min(90,p.width*.72));
@@ -69,7 +73,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}):Result{
  };
  const parts=[put('plate','Piastra timbro specchiata',plate),put('handle','Manico '+({round:'tondo',ergonomic:'ergonomico',bridge:'a ponte',palm:'da palmo'}[kind]),handle)];
  const basePreview={id:'paper',name:'Anteprima impronta',color:'#ffffff',mesh:toMeshData(t(outline.extrude(.5)))};
- const flip=(solid:Manifold)=>t(t(solid.rotate([0,180,0])).translate([0,0,p.base+p.relief]));
+ const flip=(solid:Manifold)=>t(t(solid.rotate([0,180,0])).translate([0,0,top+p.relief]));
  const assembled=[put('plate','Timbro',flip(plate)),put('handle','Manico montato',flip(t(handle.translate([0,0,-h]))))];
  return {parts,imprint:[basePreview,...edits],assembled,warnings};
  }finally{s.free();}
