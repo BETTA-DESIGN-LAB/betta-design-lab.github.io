@@ -29,7 +29,7 @@ for(const shape of ['rect','round','oval','contour'] as const)for(const handle o
 {
  const p=sanitize({...DEFAULTS,text:'',x:12,textSize:40}),r=build(M,p,{text:fixture}),s=new Scope();
  try{
-  const plate=solid(s,r.parts[0]),relief=s.t(plate.slice(p.base+.5)),ink=solid(s,r.imprint[1]),original=s.t(ink.slice(.7));
+  const plate=solid(s,r.parts[0]),relief=s.t(plate.slice(11+.5)),ink=solid(s,r.imprint[1]),original=s.t(ink.slice(.7));
   assert.ok(s.t(relief.subtract(s.t(original.scale([-1,1])))).area()<.001,'Rilievo specchiato rispetto all’impronta');
   assert.ok(s.t(original.subtract(relief)).area()>1,'Fixture realmente asimmetrica');
  }finally{s.free();}
@@ -40,3 +40,18 @@ assert.equal(handleKind({...DEFAULTS,handle:'auto',width:100}),'bridge');
 assert.equal(sanitize({...DEFAULTS,width:NaN}).width,DEFAULTS.width);
 assert.throws(()=>build(M,DEFAULTS,{extra:{name:'Bad',shapes:[[[[NaN,0],[1,0],[1,1]]]]}}),/Coordinate/);
 console.log('Timbri: '+count+' combinazioni, quattro manici, attacco comune, montaggio, specchiatura, limiti ed export verificati.');
+
+// Piastra da 3 mm ai bordi, sede centrale invariata e rilievo sulla faccia opposta.
+for(const base of [2.4,3,8]){
+ const p=sanitize({...DEFAULTS,base}),r=build(M,p,{text:fixture}),s=new Scope();
+ try{
+  const plate=solid(s,r.parts[0]);
+  const outside=s.t(s.t(M.Manifold.cube([3,3,20],true)).translate([p.width/2-5,0,10]));
+  const strip=s.t(plate.intersect(outside)),b=strip.boundingBox();
+  assert.ok(Math.abs(b.max[2]-11)<.001);
+  assert.ok(Math.abs(b.min[2]-(11-base))<.001,'Spessore ai bordi esattamente quello scelto');
+  const male=solid(s,r.assembled[1]),assembled=solid(s,r.assembled[0]);
+  assert.ok(s.t(male.intersect(assembled)).volume()<.01,'Attacco comune conservato con piastra sottile');
+ }finally{s.free();}
+}
+assert.equal(DEFAULTS.base,3);
