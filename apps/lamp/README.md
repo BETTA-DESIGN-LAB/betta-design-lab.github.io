@@ -4,7 +4,7 @@ Generatore locale nel browser; nessun caricamento del file su un server.
 
 - Forme cilindrica, bombata e a clessidra; superficie liscia, ondulata o a spirale.
 - Paralume parametrico aperto sopra e sotto, senza tetto piatto da sostenere. Spessore iniziale 0,8 mm; forme larghe/basse possono richiedere supporti. Controllare lo slicer.
-- Base dedicata al LED Kit-001 nominale Ø59 × 8 mm, USB 5 V / 3 W. Sede Ø60,4 mm, fondo 3 mm, fissaggio con biadesivo del kit; uscita cavo e due aperture inferiori. Nessuna dimensione delle viti viene presunta.
+- Base dedicata al LED Kit-001 nominale Ø59 × 8 mm, USB 5 V / 3 W. Sede Ø60,4 mm, fondo 3 mm, fissaggio con biadesivo del kit; scanalatura cavo larga 8 mm aperta dall’alto fino al piano della sede, più due aperture inferiori di ventilazione. Il LED e il filo si appoggiano dall’alto; USB e interruttore rimangono fuori e non attraversano alcun foro. Nessuna dimensione delle viti viene presunta.
 - Attacco comune: collare base Ø70 mm e foro paralume Ø70,4 mm, gioco 0,2 mm per lato. Campione di incastro scaricabile. Verifica fisica necessaria prima della lampada completa.
 - STL chiusi con normali corrette, massimo 20 MB e 6.000 triangoli. Orientamento, altezza uniforme, piano di apertura e centro dell’attacco regolabili. Svuotamento per erosione morfologica con kernel sferico discretizzato; dettagli sottili possono restare pieni. Le geometrie scollegate o con spazio insufficiente vengono rifiutate.
 - Il taglio deve liberare Ø70,6 mm all’interno. Il raccordo alla base modifica soltanto la zona inferiore del modello.
@@ -16,3 +16,5 @@ Riferimenti: guida ufficiale LED Lamp Kit-001 fornita dall’utente; https://eu.
 Prove automatiche: tre forme × tre superfici × tre spessori, STL cubo e sfera in tre orientamenti, rifiuto dello STL senza spazio LED, solidi connessi, collisioni base/paralume, grounding ed export.
 
 Ogni download è un unico ZIP con la guida PDF di montaggio: STL separati, 3MF di tutti i piatti, STL selezionato e campione di incastro. In caso di errore nel caricamento della guida, il download si interrompe e può essere riprovato.
+
+Regressione montaggio cavo: verifica la discesa del LED con un tratto di filo Ø6 mm nella scanalatura, connettore USB e interruttore rappresentati esternamente, fondo intatto e assenza di interferenza a paralume montato. Il diametro di prova è un ingombro geometrico, non una misura certificata del cavo. Il test non sostituisce il montaggio del kit reale.
