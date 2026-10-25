@@ -1,3 +1,4 @@
+import './test-stamp.ts';
 import './test-artwork-shapes.ts';
 import './test-thermoform.ts';
 import './test-box-interior.ts';
