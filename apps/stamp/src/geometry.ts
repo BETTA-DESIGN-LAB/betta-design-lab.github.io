@@ -52,7 +52,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}):Result{
  if(kind==='bridge'){
   const width=Math.max(46,Math.min(90,p.width*.72));
   const face=rect(width,26,6),cut=rect(width-18,15,5);
-  const arch=t(t(face.subtract(t(cut.translate([0,-6])))).extrude(12));
+  const arch=t(t(face.subtract(cut)).extrude(12));
   body=t(t(arch.rotate([90,0,0])).translate([0,6,13]));
   // La traversa superiore è il piano di arresto del filetto.
   warnings.push('Manico a ponte: controlla i supporti sotto la traversa nello slicer.');
