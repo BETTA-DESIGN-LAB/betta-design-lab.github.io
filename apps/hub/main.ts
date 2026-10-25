@@ -17,6 +17,7 @@ const ART: Record<string, string> = {
   magnet: a('<path d="M14 12h11v22a7 7 0 0 0 14 0V12h11v22a18 18 0 0 1-36 0z"/><path d="M14 22h11M39 22h11"/>'),
   box: a('<rect x="10" y="23" width="44" height="31" rx="8"/><rect x="8" y="12" width="48" height="12" rx="6"/><path d="M26 33h12"/>'),
   lamp: a('<path d="M20 10h24l10 29H10zM32 39v13M22 54h20"/><path d="M24 19l-4 15M32 18v16M40 19l4 15"/>'),
+  stamp: a('<path d="M15 42h34v10H15zM12 55h40M23 42l4-14h10l4 14M25 22a7 7 0 1 1 14 0c0 4-4 5-4 9h-6c0-4-4-5-4-9z"/>'),
   thermoform: a('<path d="M10 43h44v10H10zM16 43c0-25 32-25 32 0M12 13h40v8H12zM20 21c0 13 24 13 24 0"/><path d="M28 36h8M32 32v8"/>'),
   vase: a('<path d="M24 10h16l-2 9c-1 7 10 14 10 23 0 9-7 13-16 13s-16-4-16-13c0-9 11-16 10-23z"/><path d="M24 43c5 3 11 3 16 0"/>'),
   tray: a('<rect x="8" y="15" width="48" height="34" rx="12"/><rect x="16" y="23" width="32" height="18" rx="6"/>'),
