@@ -9,3 +9,5 @@ Il worker conserva solo l'ultima richiesta in attesa. Rilievo e SVG si trascinan
 ZIP con due STL, piatti 3MF, progetto JSON completo di SVG, istruzioni. Le impostazioni sono nel link, i file caricati nel progetto. Il convertitore immagini→SVG può inviare direttamente qui il disegno.
 
 Da collaudare fisicamente prima di dichiarare disponibile: filettatura e supporti, planaritá del rilievo, materiali e resa dell'inchiostro. Il manico a ponte può richiedere supporti. Non simula inchiostro o deformazione della gomma.
+
+Aggiornamento: piastra predefinita 3 mm (2,4–8 mm), rinforzo centrale fino a 11 mm per conservare il filetto e i manici esistenti. L’orientamento di stampa richiede supporti sotto le zone della piastra attorno al rinforzo; verificarli nello slicer. Dimensione testo e SVG sono visibili nella sezione di composizione, posizioni e rotazioni nei dettagli.
