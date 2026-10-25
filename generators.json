@@ -91,6 +91,13 @@
       "status": "beta",
       "category": "Creatività",
       "blurb": "Sagome piatte, stampi bombati e chiusure per oggetti termoformati."
+    },
+    {
+      "id": "stamp",
+      "name": "Timbri",
+      "status": "beta",
+      "category": "Creatività",
+      "blurb": "Timbri con testo, SVG e icone, piastre intercambiabili e quattro manici avvitabili."
     }
   ]
 }
