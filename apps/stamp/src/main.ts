@@ -39,7 +39,7 @@ function paint(){
  for(const icon of KEY_ICONS)icons.append(button({label:icon[1],icon:keyIconSvg(icon[3]),onClick:()=>{extra=parseSvg(keyIconSvg(icon[3]).replace('currentColor','#000'),icon[1]);controls.querySelector('details[data-section="icons"]')?.removeAttribute('open');invalidate();paint();rebuild();}}));
  if(state.text.trim())personal.append(range('textSize','Dimensione testo',10,150,1,'%'));
  personal.append(file);
- if(extra)personal.append(el('p',{},extra.name),range('extraSize','Dimensione SVG / icona',4,90),button({label:'Rimuovi SVG / icona',onClick:()=>{extra=undefined;invalidate();paint();rebuild();}}));
+ if(extra)personal.append(el('p',{},extra.name),range('extraSize','Dimensione SVG / icona',4,90),range('extraThicken','Ispessimento tratti SVG / icona',0,2,.05),el('p',{class:'bdl-hint'},'0 mantiene il disegno originale. +0,20 mm aggiunge circa 0,20 mm alla larghezza dei tratti, senza scalare il disegno. Anche i vuoti si restringono: controlla l’anteprima.'),button({label:'Rimuovi SVG / icona',onClick:()=>{extra=undefined;invalidate();paint();rebuild();}}));
  personal.append(el('details',{'data-section':'icons'},el('summary',{},'Scegli un’icona'),icons),el('a',{href:'../image-svg/'},'Converti un’immagine in SVG'));
  controls.append(personal);
  const shape=el('select',{class:'bdl-text-input','aria-label':'Forma della piastra',onChange:()=>{set('shape',shape.value as Params['shape']);paint();}},...([['rect','Rettangolare'],['round','Tonda'],['oval','Ovale'],['contour','Sagomata sul disegno']] as const).map(([value,label])=>el('option',{value,selected:state.shape===value},label)));
