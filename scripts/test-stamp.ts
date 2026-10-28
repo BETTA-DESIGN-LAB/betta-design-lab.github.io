@@ -55,3 +55,22 @@ for(const base of [2.4,3,8]){
  }finally{s.free();}
 }
 assert.equal(DEFAULTS.base,3);
+
+// Ispessimento in millimetri dopo la scala: identico in anteprima e rilievo specchiato.
+{
+ const s=new Scope();try{
+  const thin:SvgArtwork={name:'Tratto sottile',shapes:[[[[-.5,-.01],[.5,-.01],[.5,.01],[-.5,.01]]]]};
+  let last=0;
+  for(const extraThicken of [0,.2,1,2]){
+   const r=build(M,sanitize({...DEFAULTS,extraThicken,extraX:0,extraY:0}),{extra:thin});
+   const plate=solid(s,r.parts[0]),detail=s.t(plate.slice(11.5)),ink=solid(s,r.imprint.find(p=>p.id==='extra')!),preview=s.t(ink.slice(.7));
+   assert.ok(detail.area()>last);last=detail.area();
+   assert.ok(s.t(detail.subtract(s.t(preview.scale([-1,1])))).area()<.001);
+   assert.ok(s.t(s.t(preview.scale([-1,1])).subtract(detail)).area()<.001);
+   const b=detail.bounds();assert.ok(Math.abs(b.max[1]-b.min[1]-(.24+extraThicken))<.01);
+   assert.ok(unzipSync(to3MF(r.parts))['3D/3dmodel.model']);
+  }
+ }finally{s.free();}
+ assert.equal(sanitize({...DEFAULTS,extraThicken:NaN}).extraThicken,0);
+ assert.equal(sanitize({...DEFAULTS,extraThicken:99}).extraThicken,2);
+}
