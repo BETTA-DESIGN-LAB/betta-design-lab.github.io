@@ -7,6 +7,7 @@ export interface CoasterParams {
   [key: string]: string | number | boolean;
   connection: 'auto'|'seat'|'pins';
   svgUse: 'none' | 'decoration' | 'shape';
+  svgThicken:number;
   svgScale: number;
   svgClearance: number;
   shape: OutlineShape;
@@ -28,7 +29,7 @@ export interface CoasterParams {
 }
 
 export const DEFAULTS: CoasterParams = {
-  connection: 'auto',
+  svgThicken:0,connection: 'auto',
   svgUse: 'none',
   svgScale: 70,
   svgClearance: 0,
@@ -58,6 +59,7 @@ const clamp = (v: number, a: number, b: number) => Math.min(b, Math.max(a, v));
 export function sanitize(p: CoasterParams): CoasterParams {
   return {
     ...p,
+    svgThicken:Number.isFinite(p.svgThicken)?clamp(p.svgThicken,0,2):0,
     connection: ['auto','seat','pins'].includes(p.connection)?p.connection:'auto',
     shape: SHAPES.includes(p.shape) ? p.shape : DEFAULTS.shape,
     pattern: PATTERNS.includes(p.pattern) ? p.pattern : DEFAULTS.pattern,
