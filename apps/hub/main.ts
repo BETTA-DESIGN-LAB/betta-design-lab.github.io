@@ -1,7 +1,7 @@
 import '@bdl/ui-kit/style.css';
 import './hub.css';
 import { BRAND } from '@bdl/brand';
-import { el, initTheme, themeToggle, brandLogo, usageHelp } from '@bdl/ui-kit';
+import { el, initTheme, themeToggle, brandLogo, usageHelp, printerButton, button } from '@bdl/ui-kit';
 import registry from '../../generators.json';
 
 interface Entry { id: string; name: string; status: 'live' | 'beta' | 'planned'; category: string; blurb: string; }
@@ -25,49 +25,79 @@ const ART: Record<string, string> = {
   'desk-organizer': a('<rect x="10" y="27" width="44" height="27" rx="8"/><path d="M21 27V12h7v15M38 27V17l4-7 4 7v10M32 28v25"/>'),
 };
 
-initTheme();
-const entries = (registry.generators as Entry[]).slice().sort((x, y) => Number(x.status === 'planned') - Number(y.status === 'planned'));
 
-const card = (g: Entry) => {
-  const live = g.status !== 'planned';
-  const body = [
-    el('span', { class: 'hub-badge', 'data-kind': live ? 'live' : 'planned' }, g.status === 'beta' ? 'Beta' : live ? 'Disponibile' : 'In arrivo'),
-    el('div', { class: 'hub-art' }, el('span', {class:'hub-product-icon', html: ART[g.id] ?? ART.tray})),
-    el('div', { class: 'hub-body' },
-      el('span', { class: 'hub-cat' }, g.category),
-      el('span', { class: 'hub-name' }, g.name),
-      el('span', { class: 'hub-blurb' }, g.blurb),
-      live ? el('span', {class:'hub-card-action'}, 'Inizia a creare', el('span', {'aria-hidden':'true'}, '↗')) : null),
-  ];
-  return live
-    ? el('a', { class: 'hub-card', href: `./${g.id}/`, 'data-status': g.status }, ...body)
-    : el('div', { class: 'hub-card', 'data-status': g.status, 'aria-disabled': 'true' }, ...body);
+// Immagini illustrative generate: non fotografie di stampe collaudate.
+const PHOTO_ALT:Record<string,string>={
+ keychain:'Esempio illustrativo di portachiavi Betta arancione e bianco con anello metallico',
+ lamp:'Esempio illustrativo di lampada avorio a spirale con base scura',
+ box:'Esempio illustrativo di scatola scura con cassetto arancione',
+ coaster:'Esempio illustrativo di sottobicchieri arancioni con onde avorio',
+ christmas:'Esempio illustrativo di pallina a spirale e fiocco di neve',
+ vase:'Esempio illustrativo di vaso avorio con pareti a spirale',
+ keycap:'Esempio illustrativo di fidget clicker con switch MX e pulsanti',
+ stamp:'Esempio illustrativo di timbro con manico arancione e piastra con foglia',
+ 'desk-organizer':'Esempio illustrativo di organizer con scomparti indipendenti',
+ thermoform:'Esempio illustrativo di kit per termoformatura a forma di fantasma',
+ 'image-svg':'Esempio illustrativo di disegno di foglie e decorazione stampata'
 };
-
-const liveCount = entries.filter((g) => g.status !== 'planned').length;
+const product=(id:string,eager=false)=>'<img src="./home-products/'+id+'.webp" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
+initTheme();
+const order=['keychain','box','lamp','coaster','christmas','vase','keycap','stamp','desk-organizer','thermoform','image-svg'];
+const entries=(registry.generators as Entry[]).filter(g=>g.status!=='planned').sort((x,y)=>order.indexOf(x.id)-order.indexOf(y.id));
+const planned=(registry.generators as Entry[]).filter(g=>g.status==='planned');
+const filters=el('div',{class:'hub-filters','aria-label':'Filtra i generatori'});
+const grid=el('section',{class:'hub-grid','aria-label':'Generatori'});
+const count=el('p',{class:'hub-count','aria-live':'polite'});
+let selectedCategory='Tutti';
+const filterButtons:HTMLButtonElement[]=[];
+const card=(g:Entry)=>el('a',{class:'hub-card',href:'./'+g.id+'/'},
+ el('div',{class:'hub-art','data-product':g.id},el('span',{class:'hub-badge','data-kind':g.status},g.status==='beta'?'In prova':'Disponibile'),el('span',{class:'hub-object',html:product(g.id)})),
+ el('div',{class:'hub-body'},el('span',{class:'hub-cat'},g.category),el('h3',{class:'hub-name'},g.name),el('p',{class:'hub-blurb'},g.blurb),
+ el('span',{class:'hub-card-action'},'Personalizza',el('span',{'aria-hidden':'true'},'↗'))));
+function filter(category:string){
+ selectedCategory=category;
+ const visible=entries.filter(g=>category==='Tutti'||g.category===category);
+ grid.replaceChildren(...visible.map(card));count.textContent=visible.length+' generatori'+(category==='Tutti'?' da esplorare':' · '+category);
+ filterButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.textContent===selectedCategory)));
+}
+for(const label of ['Tutti',...new Set(entries.map(g=>g.category))]){
+ const b=button({label,onClick:()=>filter(label)});b.setAttribute('aria-pressed',String(label==='Tutti'));filterButtons.push(b);filters.append(b);
+}
+const quick=(id:string,label:string,tag:string)=>el('a',{href:'./'+id+'/',class:'hub-showcase-item','data-product':id},
+ el('span',{class:'hub-object',html:product(id,true)}),el('span',{class:'hub-showcase-label'},el('strong',{},label),el('span',{},tag),el('span',{'aria-hidden':'true'},'↗')));
+const services=el('section',{class:'hub-services',id:'servizi'},
+ el('div',{},el('span',{class:'hub-eyebrow'},'Il tuo prossimo passo'),el('h2',{},'Dall’idea alla stampa.'),el('p',{},'Crea liberamente per te. Se vuoi vendere gli oggetti che realizzi, scopri come funziona l’uso commerciale.')),
+ el('div',{class:'hub-service-copy'},el('h3',{},'Uso personale e commerciale'),el('p',{},BRAND.license.free+' '+BRAND.license.commercial),
+ el('p',{class:'bdl-hint'},'La licenza riguarda la vendita delle stampe. Il download del modello non include una licenza commerciale.')));
+if(BRAND.urls.support)services.append(el('a',{class:'bdl-btn',href:BRAND.urls.support},'Richiedi la licenza via email'));
+const contactIcon=(path:string)=>el('span',{class:'hub-contact-icon',html:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+path+'</svg>'});
+const contactLink=(label:string,detail:string,href:string,path:string,external=false)=>el('a',{class:'hub-contact-card',href,...(external?{target:'_blank',rel:'noopener noreferrer'}:{})},
+ contactIcon(path),el('span',{},el('strong',{},label),el('span',{class:'hub-contact-detail'},detail)),el('span',{'aria-hidden':'true'},external?'↗':'→'));
+const contacts=el('section',{class:'hub-contacts',id:'contatti','aria-labelledby':'contact-heading'},
+ el('div',{},el('span',{class:'hub-eyebrow'},'Parliamone'),el('h2',{id:'contact-heading'},'Restiamo in contatto.'),el('p',{},'Dubbi sui generatori, richieste di stampa o licenza commerciale? Scrivici. Sui social trovi idee, novità e progetti.')),
+ el('div',{class:'hub-contact-links'},
+ contactLink('Scrivici',BRAND.email,BRAND.urls.support,'<rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7 8 6 8-6"/>'),
+ contactLink('Instagram','@betta_design_lab__3d',BRAND.urls.instagram,'<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/>',true),
+ contactLink('TikTok','@filippobettarini10',BRAND.urls.tiktok,'<path d="M14 3v12.5a4.5 4.5 0 1 1-4-4.47M14 3c.6 3.5 2.5 5 6 5"/>',true)));
 document.body.append(
-  el('header', { class: 'bdl-topbar' },
-    brandLogo('./'),
-    el('span', { class: 'bdl-spacer' }),
-    themeToggle()),
-  el('main', { class: 'hub' },
-    el('section', { class: 'hub-hero' },
-      el('div', {class:'hub-hero-copy'},
-        el('span', {class:'hub-eyebrow'}, 'Il tuo spazio creativo'),
-        el('h1', {}, 'Dai forma', el('br'), 'alle tue ', el('span', {}, 'idee.')),
-        el('p', {}, BRAND.tagline),
-        el('a', {class:'bdl-btn', 'data-variant':'primary', href:'#generatori'}, 'Scopri i generatori', el('span', {'aria-hidden':'true'}, '↓')),
-        el('div', { class: 'hub-facts' },
-          el('span', { class: 'hub-fact' }, 'Senza account'),
-          el('span', { class: 'hub-fact' }, 'Gratis per uso personale'),
-          el('span', { class: 'hub-fact' }, 'STL e 3MF'))),
-      el('div', {class:'hub-brand-card'},
-        el('img', {src:`./${BRAND.logo}`, alt:'Betta Design Lab 3D · logo ufficiale', width:1774, height:887}),
-        el('span', {class:'hub-brand-caption'}, 'Creatività che prende forma.'))),
-    el('div', {class:'hub-grid-heading', id:'generatori'},
-      el('div', {}, el('span', {class:'hub-eyebrow'}, 'La suite'), el('h2', {}, 'Cosa vuoi creare oggi?')),
-      el('span', {class:'hub-count'}, `${liveCount} generatori disponibili`)),
-    el('section', { class: 'hub-grid', 'aria-label': 'Generatori' }, ...entries.map(card)),
-    usageHelp(),
-    el('footer', { class: 'hub-footer' }, `© ${BRAND.year} ${BRAND.name}. ${BRAND.license.free} ${BRAND.license.commercial}`)),
+ el('header',{class:'bdl-topbar'},brandLogo('./'),el('nav',{class:'hub-nav','aria-label':'Navigazione principale'},el('a',{href:'#generatori'},'Generatori'),el('a',{href:'#come-funziona'},'Come funziona'),el('a',{href:'#servizi'},'Uso e licenza'),el('a',{href:'#contatti'},'Contatti')),el('span',{class:'bdl-spacer'}),printerButton(true),themeToggle()),
+ el('main',{class:'hub'},
+  el('section',{class:'hub-hero'},
+   el('div',{class:'hub-hero-copy'},el('span',{class:'hub-eyebrow'},'Un oggetto. Il tuo stile.'),el('h1',{},'Le tue idee,',el('br'),'in ',el('span',{},'forma.')),
+    el('p',{},'Portachiavi, oggetti per la casa e piccoli dettagli da rendere tuoi. Scegli un modello, personalizzalo e scarica il file per la stampa 3D.'),
+    el('div',{class:'hub-hero-actions'},el('a',{class:'bdl-btn','data-variant':'primary',href:'#generatori'},'Trova il tuo prossimo progetto',el('span',{'aria-hidden':'true'},'↓')),el('a',{class:'hub-text-link',href:'#come-funziona'},'Come funziona')),
+    el('div',{class:'hub-facts'},el('span',{},'Senza account'),el('span',{},'Uso personale gratuito'),el('span',{},'File STL e 3MF'))),
+   el('div',{class:'hub-showcase','aria-label':'Esempi di oggetti da personalizzare'},
+    quick('lamp','Una luce tutta tua','Lampade'),quick('keychain','Un nome da portare con te','Portachiavi'),quick('box','Ogni cosa al suo posto','Scatole e organizer'),
+    el('p',{class:'hub-illustration-note'},'Immagini illustrative generate con IA · il risultato varia con la configurazione'))),
+  el('section',{class:'hub-steps',id:'come-funziona','aria-label':'Come funziona'},
+   ...[['01','Scegli','Parti dall’oggetto che vuoi creare.'],['02','Personalizza','Misure, forme e dettagli, con anteprima 3D.'],['03','Stampa','Scarica il file e preparalo nel tuo slicer.']].map(([n,title,text])=>el('div',{},el('span',{class:'hub-step-number'},n),el('div',{},el('h2',{},title),el('p',{},text))))),
+  el('div',{class:'hub-grid-heading',id:'generatori'},el('div',{},el('span',{class:'hub-eyebrow'},'Esplora la suite'),el('h2',{},'Cosa creiamo oggi?')),count),
+  filters,grid,
+  el('aside',{class:'hub-svg-callout'},el('span',{class:'hub-small-icon',html:ART['image-svg']}),el('div',{},el('h2',{},'Hai un logo o un disegno?'),el('p',{},'Converti un’immagine in SVG e usala nei generatori compatibili.')),el('a',{class:'bdl-btn',href:'./image-svg/'},'Prepara il tuo SVG')),
+  services,contacts,
+  el('details',{class:'hub-coming'},el('summary',{},'Stiamo lavorando anche a…'),el('p',{},planned.map(g=>g.name).join(' · '))),
+  usageHelp(),
+  el('footer',{class:'hub-footer'},el('span',{},'© '+BRAND.year+' '+BRAND.name),el('a',{href:'#generatori'},'Esplora i generatori'),el('a',{href:'#servizi'},'Uso e licenza'),el('a',{href:BRAND.urls.support},BRAND.email),el('a',{href:BRAND.urls.instagram,target:'_blank',rel:'noopener noreferrer'},'Instagram'),el('a',{href:BRAND.urls.tiktok,target:'_blank',rel:'noopener noreferrer'},'TikTok'),el('span',{},BRAND.license.free)))
 );
+filter('Tutti');
