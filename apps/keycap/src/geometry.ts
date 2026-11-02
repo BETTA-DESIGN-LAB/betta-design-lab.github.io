@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 import { artworkSection } from '../../shared/artwork-geometry.ts';
 import { Scope, outline, toMeshData, type Part, type ManifoldToplevel, type CrossSection, type Manifold } from '@bdl/geometry';
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
@@ -105,7 +106,7 @@ export function buildKeycap(M: ManifoldToplevel, input: Params, artwork?: SvgArt
       cap = s.t(cap.subtract(solid(at, 3.7, capZ - 4)));
     }
     if (drawing) {
-      const design = s.t(drawing.scale(artworkSize * p.designScale / 100));
+      const design = thickenSvg(s,s.t(drawing.scale(artworkSize * p.designScale / 100)),p.svgThicken);
       const field = p.shape === 'artwork' ? capOutline : s.t(capOutline.offset(-0.3, 'Round', 2, 48));
       const clipped = s.t(design.intersect(field));
       if (clipped.isEmpty()) warnings.push('Il disegno non interseca il pulsante.');
