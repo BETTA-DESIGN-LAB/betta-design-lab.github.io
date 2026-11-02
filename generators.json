@@ -74,7 +74,7 @@
     {
       "id": "desk-organizer",
       "name": "Desk organizer",
-      "status": "planned",
+      "status": "beta",
       "category": "Ufficio",
       "blurb": "Organizer modulari per la scrivania."
     },
