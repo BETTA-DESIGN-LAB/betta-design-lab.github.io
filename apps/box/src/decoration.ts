@@ -1,7 +1,7 @@
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
 export type Face = 'lid' | 'front' | 'back' | 'left' | 'right';
 export const FACES: Record<Face, string> = { lid: 'Coperchio / tetto', front: 'Parete davanti', back: 'Parete dietro', left: 'Parete sinistra', right: 'Parete destra' };
-export interface Decoration { id: number; face: Face; mode: 'inlay' | 'relief' | 'engrave'; size: number; u: number; v: number; angle: number; depth: number; color: string; artwork: SvgArtwork; }
+export interface Decoration { id: number; face: Face; mode: 'inlay' | 'relief' | 'engrave'; thicken?:number;size: number; u: number; v: number; angle: number; depth: number; color: string; artwork: SvgArtwork; }
 export function validateDecorations(raw: unknown): Decoration[] {
   if (!Array.isArray(raw) || raw.length > 12) throw new Error('Massimo 12 decorazioni per progetto.');
   let points = 0;
@@ -15,7 +15,7 @@ export function validateDecorations(raw: unknown): Decoration[] {
       }
     }
     const bounded = (key: string, lo: number, hi: number) => { if (typeof d[key] !== 'number' || !Number.isFinite(d[key])) throw new Error('Misure della decorazione non valide.'); return Math.max(lo, Math.min(hi, d[key])); };
-    return { ...d, id: i + 1, size: bounded('size', 3, 150), u: bounded('u', -110, 110), v: bounded('v', -110, 110), angle: bounded('angle', -180, 180), depth: bounded('depth', 0.2, 1) };
+    return { ...d, thicken:typeof d.thicken==='number'&&Number.isFinite(d.thicken)?Math.max(0,Math.min(2,d.thicken)):0, id: i + 1, size: bounded('size', 3, 150), u: bounded('u', -110, 110), v: bounded('v', -110, 110), angle: bounded('angle', -180, 180), depth: bounded('depth', 0.2, 1) };
   });
 }
 /** Rotazioni locali XY: Z punta verso l'esterno della superficie. */

@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 import { activeDividers, dividerRect, interiorSize } from './interior.ts';
 import type {SvgArtwork} from '../../coaster/src/svg.ts';
 import { Scope, toMeshData, type ManifoldToplevel, type Part, type CrossSection } from '@bdl/geometry';
@@ -107,7 +108,7 @@ export function buildBox(M: ManifoldToplevel, input: Params, decorationInput: re
       const loY = onLid ? -p.depth / 2 + p.radius + p.wall : -p.height / 2 + p.floor + 1 + (drawer && d.face==='front'?p.wall+p.clearance:0);
       const hiY = onLid ? p.depth / 2 - p.radius - p.wall : p.height / 2 - 5;
       const cs = s.t(C.union(d.artwork.shapes.map((rings) => s.t(C.ofPolygons(rings, 'EvenOdd')))));
-      const positioned = s.t(s.t(s.t(cs.scale(d.size)).rotate(d.angle)).translate([d.u, d.v]));
+      const positioned = s.t(s.t(thickenSvg(s,s.t(cs.scale(d.size)),d.thicken).rotate(d.angle)).translate([d.u, d.v]));
       let safe = s.t(rect(faceWidth - 2 * marginX, hiY - loY).translate([0, (hiY + loY) / 2]));
       if(drawer&&d.face==='front'&&p.labelText.trim()){
         const lh=Math.min(p.labelHeight,trayHeight-p.floor-8);
