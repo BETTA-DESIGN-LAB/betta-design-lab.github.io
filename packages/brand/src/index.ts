@@ -4,6 +4,7 @@
 export const BRAND = {
   name: 'Betta Design Lab',
   shortName: 'bettadesignlab',
+  email: 'bettadesignlab@gmail.com',
   tagline: 'Un’idea, il tuo tocco, un oggetto da creare. Personalizza e porta le tue idee nella stampa 3D.',
   logo: 'betta-design-lab-logo.png',
   colors: { orange: '#ff4b16', black: '#111111', white: '#ffffff' },
@@ -11,7 +12,9 @@ export const BRAND = {
     hub: './',
     // TODO: aggiornare quando la repo GitHub esiste
     github: '',
-    support: '',
+    support: 'mailto:bettadesignlab@gmail.com',
+    instagram: 'https://www.instagram.com/betta_design_lab__3d/',
+    tiktok: 'https://www.tiktok.com/@filippobettarini10',
   },
   license: {
     free: 'Gratis per uso personale.',
@@ -35,3 +38,5 @@ export const FILAMENTS: ReadonlyArray<{ name: string; hex: string }> = [
   { name: 'Senape', hex: '#d4a429' },
   { name: 'Rosa cipria', hex: '#e3b3ad' },
 ];
+
+export * from './printers.ts';
