@@ -1,3 +1,4 @@
+import { printerCenter, getPrinterChoice } from '@bdl/brand';
 // Export dei modelli: STL binario (tutti i pezzi uniti) e 3MF multi-oggetto
 // (un oggetto per pezzo, con colore), che Bambu Studio / PrusaSlicer / Orca aprono
 // come parti già assegnate ai filamenti in base al colore.
@@ -39,7 +40,21 @@ export function toSTL(parts: readonly Part[], header = 'bettadesignlab'): Uint8A
 const esc = (s: string) => s.replace(/[<>&"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const num = (x: number) => (Math.round(x * 1e4) / 1e4).toString();
 
+export type PrintProfile = 'standard' | 'mechanical';
+/** Impostazioni oggetto: nessun preset macchina, temperatura o filamento. */
+export function printSettings(profile: PrintProfile = 'standard'): Record<string, string> {
+  return {
+    layer_height: '0.2',
+    wall_loops: profile === 'mechanical' ? '4' : '3',
+    top_shell_layers: '5',
+    bottom_shell_layers: '4',
+    sparse_infill_density: profile === 'mechanical' ? '20%' : '15%',
+    sparse_infill_pattern: 'gyroid',
+  };
+}
 export interface ThreeMFOptions {
+  /** Profilo consigliato per nozzle 0,4 mm; false conserva il processo dello slicer. */
+  printProfile?: PrintProfile | false;
   title?: string;
   designer?: string;
   /** Sposta il modello al centro del piatto (mm). Default 128,128 (piatti 256 mm). */
@@ -47,7 +62,7 @@ export interface ThreeMFOptions {
 }
 
 export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8Array {
-  const [cx, cy] = opts.plateCenter ?? [128, 128];
+  const [cx, cy] = opts.plateCenter ?? printerCenter();
   const live = parts.filter((p) => p.mesh.indices.length > 0);
   const palette = [...new Set(live.map(p => p.color.toUpperCase()))];
   const colorGroupId = live.length + 3;
@@ -98,7 +113,9 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   // avere un extruder 1-based e la palette va dichiarata nel progetto.
   // Nessun collegamento AMS né preset specifico della stampante del cliente.
   const partSettings = live.map((p, i) => `<part id="${i + 2}" subtype="normal_part"><metadata key="name" value="${esc(p.name)}"/><metadata key="extruder" value="${palette.indexOf(p.color.toUpperCase()) + 1}"/><metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/></part>`).join('');
-  const modelSettings = `<?xml version="1.0" encoding="UTF-8"?><config><object id="${asmId}"><metadata key="name" value="${esc(opts.title ?? 'model')}"/><metadata key="extruder" value="1"/>${partSettings}</object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="${asmId}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance></plate></config>`;
+  const processSettings = (opts.printProfile === false || (getPrinterChoice() && getPrinterChoice()!.nozzle !== 0.4)) ? '' : Object.entries(printSettings(opts.printProfile))
+    .map(([key, value]) => `<metadata key="${key}" value="${esc(value)}"/>`).join('');
+  const modelSettings = `<?xml version="1.0" encoding="UTF-8"?><config><object id="${asmId}"><metadata key="name" value="${esc(opts.title ?? 'model')}"/><metadata key="extruder" value="1"/>${processSettings}${partSettings}</object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="${asmId}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance></plate></config>`;
   return zipSync({
     'Metadata/model_settings.config': strToU8(modelSettings),
     '[Content_Types].xml': strToU8(contentTypes),
