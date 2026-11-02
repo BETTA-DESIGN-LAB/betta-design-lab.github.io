@@ -1,3 +1,9 @@
+import './test-keychain-letter-detail.ts';
+import './test-desk-auto-fit.ts';
+import './test-svg-thickness.ts';
+import './test-desk-organizer.ts';
+import './test-printers.ts';
+import "./test-lamp-attachment.ts";
 import './test-stamp.ts';
 import './test-artwork-shapes.ts';
 import './test-thermoform.ts';

@@ -27,3 +27,16 @@ assert.ok(model.includes('<metadata name="Generator">bettadesignlab</metadata>')
 const mono = strFromU8(unzipSync(to3MF([parts[0]]))['3D/3dmodel.model']);
 assert.equal((mono.match(/<m:color color=/g) ?? []).length, 1);
 console.log('3MF: colori standard, assegnazioni e geometrie senza preset verificati');
+
+for (const [profile, walls, infill] of [['standard','3','15%'],['mechanical','4','20%']] as const) {
+  const zip = unzipSync(to3MF(parts, { printProfile: profile }));
+  const config = strFromU8(zip['Metadata/model_settings.config']);
+  for (const [key,value] of Object.entries({layer_height:'0.2',wall_loops:walls,sparse_infill_density:infill,sparse_infill_pattern:'gyroid',top_shell_layers:'5',bottom_shell_layers:'4'})) {
+    assert.ok(config.includes(`key="${key}" value="${value}"`));
+  }
+  assert.ok(!/nozzle_diameter|temperature|printer_model|enable_support|support_type|filament_type/.test(config));
+  assert.equal(zip['Metadata/project_settings.config'], undefined);
+}
+const untouched = strFromU8(unzipSync(to3MF(parts, {printProfile:false}))['Metadata/model_settings.config']);
+assert.ok(!untouched.includes('layer_height'));
+console.log('3MF: profili oggetto 0.20, robustezza e conservazione macchina/filamenti verificati');
