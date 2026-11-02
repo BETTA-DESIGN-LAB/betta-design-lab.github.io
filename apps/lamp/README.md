@@ -5,7 +5,7 @@ Generatore locale nel browser; nessun caricamento del file su un server.
 - Forme cilindrica, bombata e a clessidra; superficie liscia, ondulata o a spirale.
 - Paralume parametrico aperto sopra e sotto, senza tetto piatto da sostenere. Spessore iniziale 0,8 mm; forme larghe/basse possono richiedere supporti. Controllare lo slicer.
 - Base dedicata al LED Kit-001 nominale Ø59 × 8 mm, USB 5 V / 3 W. Sede Ø60,4 mm, fondo 3 mm, fissaggio con biadesivo del kit; scanalatura cavo larga 8 mm aperta dall’alto fino al piano della sede, più due aperture inferiori di ventilazione. Il LED e il filo si appoggiano dall’alto; USB e interruttore rimangono fuori e non attraversano alcun foro. Nessuna dimensione delle viti viene presunta.
-- Attacco comune: collare base Ø70 mm e foro paralume Ø70,4 mm, gioco 0,2 mm per lato. Campione di incastro scaricabile. Verifica fisica necessaria prima della lampada completa.
+- Attacco originale a baionetta: tre dentini, guide di ingresso e rotazione oraria di 25° vista dall’alto, con finecorsa e ritenuta assiale. Collare maschio Ø64,6 mm, foro femmina Ø65,2 mm; gioco radiale nominale 0,3 mm. Primo tratto del paralume alto 10 mm riservato all’attacco. Due campioni separati scaricabili, da provare fisicamente prima della stampa completa. Non e una copia dimensionale del CAD Bambu. Nessuna resistenza meccanica certificata.
 - STL chiusi con normali corrette, massimo 20 MB e 6.000 triangoli. Orientamento, altezza uniforme, piano di apertura e centro dell’attacco regolabili. Svuotamento per erosione morfologica con kernel sferico discretizzato; dettagli sottili possono restare pieni. Le geometrie scollegate o con spazio insufficiente vengono rifiutate.
 - Il taglio deve liberare Ø70,6 mm all’interno. Il raccordo alla base modifica soltanto la zona inferiore del modello.
 - Calcolo in worker interrompibile con timeout di 45 s. Nessuna riparazione automatica o garanzia su STL arbitrari; semplificare/riparare fuori dal tool quando richiesto.
@@ -18,3 +18,7 @@ Prove automatiche: tre forme × tre superfici × tre spessori, STL cubo e sfera 
 Ogni download è un unico ZIP con la guida PDF di montaggio: STL separati, 3MF di tutti i piatti, STL selezionato e campione di incastro. In caso di errore nel caricamento della guida, il download si interrompe e può essere riprovato.
 
 Regressione montaggio cavo: verifica la discesa del LED con un tratto di filo Ø6 mm nella scanalatura, connettore USB e interruttore rappresentati esternamente, fondo intatto e assenza di interferenza a paralume montato. Il diametro di prova è un ingombro geometrico, non una misura certificata del cavo. Il test non sostituisce il montaggio del kit reale.
+
+Solo attacco integrato: nessun adattatore da incollare. Una base con i tre dentini già stampata resta utilizzabile con il nuovo paralume. Il campione fit-shade riproduce i primi 10 mm del bordo completo, incluse le guide interne. Se il bordo del vecchio paralume è liscio, rigenerare il paralume dal tool con forma e misure desiderate. Il pulsante Solo paralume + guida evita di ristampare la base.
+
+Regressioni attacco: ingresso assiale, rotazione completa fino a 25°, collisione di ritenuta se sollevato da chiuso, finecorsa oltre il giro consentito, ingresso errato bloccato. Tutte le prove sono geometriche, da integrare con campioni fisici.
