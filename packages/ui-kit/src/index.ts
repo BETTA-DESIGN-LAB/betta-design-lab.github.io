@@ -1,3 +1,4 @@
+import { PRINTERS, getPrinterChoice, savePrinterChoice, validatePrinterChoice, onPrinterChange } from '@bdl/brand';
 // Componenti UI condivisi. Ogni controllo di ogni generatore viene da qui, così il sito
 // resta un prodotto unico e non dieci app che si somigliano.
 
@@ -85,6 +86,7 @@ export function topbar(title?: string): HTMLElement {
     brandLogo(BRAND.urls.hub.startsWith('./') ? '../' : BRAND.urls.hub),
     title ? el('span', { class: 'bdl-topbar-title' }, title) : null,
     el('span', { class: 'bdl-spacer' }),
+    printerButton(),
     themeToggle(),
   );
 }
@@ -121,7 +123,19 @@ export function appShell(opts: { title: string; intro: string }): AppShell {
 }
 
 export function section(title: string, ...children: Child[]): HTMLElement {
-  return el('div', { class: 'bdl-section' }, el('h2', { class: 'bdl-section-title' }, title), ...children);
+  const root=el('div', { class: 'bdl-section' }, el('h2', { class: 'bdl-section-title' }, title), ...children);
+  if (/^Piatt[oi] di stampa$/.test(title)) {
+    const hint=el('p',{class:'bdl-hint'});root.prepend(hint);
+    const sync=()=>{
+      const chosen=getPrinterChoice();
+      hint.hidden=!chosen;hint.textContent='Dimensioni gestite da “La tua stampante”. Cambiala dal pulsante in alto.';
+      for(const row of root.querySelectorAll<HTMLElement>('.bdl-row')){
+        if(row.querySelector('input[type="range"],.bdl-seg'))row.hidden=!!chosen;
+      }
+    };
+    sync();onPrinterChange(sync);
+  }
+  return root;
 }
 
 export function panelFooter(): HTMLElement {
@@ -313,4 +327,66 @@ function installStartupRecovery(): void {
   };
   window.addEventListener('error', event => { if (event.error) recover(); });
   window.addEventListener('unhandledrejection', recover);
+}
+
+/** Scelta locale della stampante: non carica preset macchina nello slicer. */
+export function printerButton(firstVisit=false):HTMLButtonElement {
+ const b=button({label:'La tua stampante',onClick:()=>openPrinterDialog(b)});
+ const paint=()=>{
+  const c=getPrinterChoice(),p=PRINTERS.find(p=>p.id===c?.id);
+  b.textContent=c?`${p?p.brand+' '+p.name:'Stampante personalizzata'} · ${String(c.nozzle).replace('.',',')} mm`:'La tua stampante';
+  b.classList.add('bdl-printer-button');
+ };
+ paint();onPrinterChange(paint);
+ if(firstVisit&&!getPrinterChoice()){
+  let dismissed=false;try{dismissed=sessionStorage.getItem('bdl-printer-skipped')==='1';}catch{}
+  if(!dismissed)queueMicrotask(()=>openPrinterDialog(b));
+ }
+ return b;
+}
+function openPrinterDialog(trigger:HTMLElement):void{
+ if(document.querySelector('.bdl-printer-dialog'))return;
+ const current=getPrinterChoice(),selected=PRINTERS.find(p=>p.id===current?.id);
+ const d=el('dialog',{class:'bdl-printer-dialog','aria-labelledby':'printer-heading'});
+ const brand=el('select',{'aria-label':'Marca'}),model=el('select',{'aria-label':'Modello'}),nozzle=el('select',{'aria-label':'Nozzle montato'});
+ brand.append(el('option',{value:''},'Scegli la marca'),...([...new Set(PRINTERS.map(p=>p.brand)),'Altra stampante'].map(v=>el('option',{value:v},v))));
+ const dims=el('div',{class:'bdl-printer-dimensions'});
+ const volume=current?.volume??[256,256,256];
+ const inputs=['Larghezza X','Profondità Y','Altezza Z'].map((name,i)=>{
+  const input=el('input',{type:'number',min:80,max:1000,step:1,value:volume[i],required:true,'aria-label':name+' in mm'});
+  dims.append(el('label',{},name+' (mm)',input));return input;
+ });
+ const info=el('p',{class:'bdl-hint',role:'status'}),error=el('p',{class:'bdl-hint',role:'alert'});
+ const close=()=>{d.close();d.remove();trigger.focus();};
+ const updateNozzles=()=>{
+  const p=PRINTERS.find(p=>p.id===model.value),custom=brand.value==='Altra stampante';
+  const values=custom?[0.2,0.25,0.4,0.6,0.8,1]:p?.nozzles??[0.4];
+  nozzle.replaceChildren(...values.map(n=>el('option',{value:n},String(n).replace('.',',')+' mm')));
+  nozzle.value=String(current&&current.id===model.value?current.nozzle:0.4);
+  dims.hidden=!custom;model.disabled=custom||!brand.value;
+  info.textContent=custom?'Inserisci il volume utile della tua stampante.':p?`Volume: ${p.volume.join(' × ')} mm. Dimensioni del piatto applicate ai generatori.`:'Puoi continuare anche senza scegliere.';
+ };
+ const updateModels=()=>{
+  model.replaceChildren(el('option',{value:''},'Scegli il modello'),...PRINTERS.filter(p=>p.brand===brand.value).map(p=>el('option',{value:p.id},p.name)));
+  if(selected?.brand===brand.value)model.value=selected.id;
+  updateNozzles();
+ };
+ brand.value=current?.id==='custom'?'Altra stampante':selected?.brand??'';
+ brand.addEventListener('change',updateModels);model.addEventListener('change',updateNozzles);updateModels();
+ if(current?.id==='custom')nozzle.value=String(current.nozzle);
+ const form=el('form',{},el('h2',{id:'printer-heading'},'Creiamo sul tuo piatto'),
+  el('p',{},'Scegli la stampante una volta. Puoi cambiarla quando vuoi, senza perdere il progetto.'),
+  el('label',{},'Marca',brand),el('label',{},'Modello',model),dims,el('label',{},'Nozzle montato',nozzle),info,
+  el('p',{class:'bdl-hint'},'La scelta adatta il piatto della suite. Nello slicer conserva la tua stampante e verifica il nozzle effettivamente montato.'),error,
+  el('div',{class:'bdl-printer-actions'},
+   button({label:'Continua senza scegliere',onClick:()=>{try{sessionStorage.setItem('bdl-printer-skipped','1');}catch{}savePrinterChoice(null);close();}}),
+   button({label:'Usa questa stampante',variant:'primary',onClick:()=>{
+    const custom=brand.value==='Altra stampante';
+    const choice=validatePrinterChoice({id:custom?'custom':model.value,nozzle:Number(nozzle.value),...(custom?{volume:inputs.map(i=>Number(i.value))}:{})});
+    if(!choice){error.textContent='Scegli un modello oppure inserisci tre misure valide, da 80 a 1000 mm.';return;}
+    savePrinterChoice(choice);close();
+   }})));
+ form.addEventListener('submit',e=>e.preventDefault());d.append(form);document.body.append(d);
+ d.addEventListener('cancel',e=>{e.preventDefault();try{sessionStorage.setItem('bdl-printer-skipped','1');}catch{}close();});
+ d.showModal();
 }
