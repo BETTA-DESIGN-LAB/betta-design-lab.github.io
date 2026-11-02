@@ -1,3 +1,4 @@
+import { printerPlate, printerCenter, onPrinterChange } from '@bdl/brand';
 import {interiorEditor} from './interior-editor.ts';
 import {labelArtwork} from './label.ts';
 import {importArtwork} from '../../keycap/src/artwork.ts';
@@ -109,7 +110,7 @@ const exports = [
   button({ label: '3MF · tutti i piatti', variant: 'primary', onClick: () => {
     if (layout.oversized.length || layout.warnings.length) {toast('Controlla i pezzi fuori dal piatto o gli ingombri sovrapposti prima di esportare.');return;}
     const files: Record<string, Uint8Array> = {};
-    layout.plates.forEach((items,i)=>{if(items.length)files[`piatto-${i+1}.3mf`]=to3MF(items,{title:`Scatola · piatto ${i+1}`,plateCenter:[state.plateWidth/2,state.plateDepth/2]});});
+    layout.plates.forEach((items,i)=>{if(items.length)files[`piatto-${i+1}.3mf`]=to3MF(items,{printProfile:'mechanical',title:`Scatola · piatto ${i+1}`,plateCenter:printerCenter(state.plateWidth,state.plateDepth)});});
     if(layout.plates.length===1) download(files['piatto-1.3mf'],'scatola-piatto-1.3mf','model/3mf');
     else download(zipSync(files),'scatola-piatti-3mf.zip','application/zip');
   } }),
@@ -120,7 +121,7 @@ function show(refit = true) { connections.refresh(); viewer.setMoveEnabled(view=
 shell.panel.inert = true;
 const M = await loadManifold(wasmUrl); shell.panel.inert = false;
 function refreshLayout(refit = false) {
-  layout=arrange(mountParts,state.plateWidth,state.plateDepth,pinned);
+  layout=arrange(mountParts,...printerPlate(state.plateWidth,state.plateDepth),pinned);
   plate=Math.min(plate,Math.max(0,layout.plates.length-1));
   if(selected && pinned[selected] && parts.some(p=>p.id===selected))plate=pinned[selected].plate;
   plateSelect.replaceChildren(...layout.plates.map((_,i)=>el('option',{value:String(i)},`Piatto ${i+1} di ${layout.plates.length}`)));plateSelect.value=String(plate);
@@ -143,3 +144,5 @@ const rebuildNextFrame = rafThrottle(rebuild);
 const schedule = () => { exports.forEach(b => b.disabled = true); singleSTL.disabled = true; shell.setStatus('Aggiorno il modello…', 'busy'); rebuildNextFrame(); };
 await receiveSvg(async file=>{const artwork=await importArtwork(file,180);decorations=validateDecorations([{id:1,face:state.model==='stackable'&&!state.stackLid?'front':'lid',mode:'inlay',size:20,u:0,v:0,angle:0,depth:.6,color:'#d4a429',artwork}]);editor.sync();});
 controls.forEach(c=>c()); rebuild();
+
+onPrinterChange(()=>{refreshLayout(true);});

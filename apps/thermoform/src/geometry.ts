@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 import {Scope,toMeshData,type ManifoldToplevel,type CrossSection,type Manifold,type Part,type Vec2} from '@bdl/geometry';
 import type {SvgArtwork} from '../../coaster/src/svg.ts';
 import {sanitize,type Params} from './params.ts';
@@ -41,6 +42,7 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
    return [x,y];});outline=t(C.ofPolygons([points],'EvenOdd'));
  }
  const b=outline.bounds();outline=t(t(outline.translate([-(b.min[0]+b.max[0])/2,-(b.min[1]+b.max[1])/2])).scale([p.width/(b.max[0]-b.min[0]),p.height/(b.max[1]-b.min[1])]));
+ if(p.shape==='svg')outline=thickenSvg(s,outline,p.svgThicken);
  const inner=t(outline.offset(-p.rim,'Round',2,32));if(inner.isEmpty())throw new Error('Bordo troppo grande per la sagoma.');
  const neckX=p.shape==='heart'?-p.width*.25:0;
  const mirrored=t(outline.scale([-1,1]));const dual=neckX!==0||t(outline.subtract(mirrored)).area()>outline.area()*.001;

@@ -1,3 +1,4 @@
+import { printerPlate, printerCenter, onPrinterChange } from '@bdl/brand';
 import '@bdl/ui-kit/style.css';
 import {type Part} from '@bdl/geometry';
 import {createViewer} from '@bdl/viewer';
@@ -60,7 +61,7 @@ const tools=segmented({label:'Vista',value:view,options:[{value:'imprint',label:
 shell.stageTools.append(iconButton({label:'Vista 3D',icon:ICONS.iso,onClick:()=>viewer.setView('iso')}),iconButton({label:'Vista dall’alto',icon:ICONS.top,onClick:()=>viewer.setView('top')}),tools.root);
 const plateTools=el('div',{class:'bdl-plate-controls'},button({label:'‹',title:'Piatto precedente',onClick:()=>{plate=Math.max(0,plate-1);display(true);}}),plateLabel,button({label:'›',title:'Piatto successivo',onClick:()=>{plate++;display(true);}}));shell.stageTools.append(plateTools);
 function display(refit=false){
- if(!result)return;const packed=arrange(result.parts,plateSize,plateSize,pinned);
+ if(!result)return;const packed=arrange(result.parts,...printerPlate(plateSize,plateSize),pinned);
  plate=Math.max(0,Math.min(plate,packed.plates.length-1));shown=view==='imprint'?result.imprint:view==='assembled'?result.assembled:packed.plates[plate]??[];
  viewer.setParts(shown,{refit});viewer.setPlateSize(plateSize,plateSize);viewer.setMoveEnabled(view!=='assembled');plateTools.hidden=view!=='kit';plateLabel.textContent=`Piatto ${plate+1} / ${packed.plates.length}`;
  const warnings=[...result.warnings,...packed.warnings,...(packed.oversized.length?['Un pezzo supera il piatto.']:[])];
@@ -69,12 +70,12 @@ function display(refit=false){
 }
 function refresh(){if(exports[3])exports[3].hidden=!selected||!result?.parts.some(p=>p.id===selected);}
 const filename=()=>slug('timbro-'+state.text);
-function packed(){if(!result)return;const r=arrange(result.parts,plateSize,plateSize,pinned);if(r.oversized.length||r.warnings.length){toast('Sistema i pezzi sul piatto prima di scaricare.');return;}return r;}
+function packed(){if(!result)return;const r=arrange(result.parts,...printerPlate(plateSize,plateSize),pinned);if(r.oversized.length||r.warnings.length){toast('Sistema i pezzi sul piatto prima di scaricare.');return;}return r;}
 const guide='BETTA DESIGN LAB · TIMBRI — PROTOTIPO\n\nLa piastra contiene già l’impronta specchiata: non specchiarla di nuovo nello slicer.\nStampa piastra e manico come pezzi distinti. La piastra è sottile con un rinforzo centrale per il filetto. Nell’orientamento fornito il rinforzo poggia sul piatto: prevedi supporti sotto le zone circostanti della piastra e controllane la rimozione. Il filetto della piastra si apre sul retro: controlla i ponti della sede e i supporti nello slicer; evita supporti difficili da rimuovere nel filetto. Il manico a ponte richiede particolare attenzione sotto la traversa.\nControlla la filettatura con una piccola prova. Tutti i manici usano lo stesso attacco. Non forzare: aumenta il gioco e ristampa la piastra se necessario.\nLa superficie del rilievo deve essere uniforme. Prova su carta con poco inchiostro e pressione omogenea. Materiale e inchiostro vanno collaudati insieme; un timbro FDM non garantisce la stessa resa di uno in gomma.\n';
 for(const options of [
- {label:'Scarica kit completo',variant:'primary' as const,onClick:()=>{const r=packed();if(!r||!result)return;const entries:Record<string,Uint8Array>={'LEGGIMI.txt':strToU8(guide),'progetto.json':strToU8(JSON.stringify({version:1,params:state,extra}))};for(const p of result.parts)entries[p.id+'.stl']=toSTL([p]);for(const [i,parts]of r.plates.entries())entries['piatto-'+(i+1)+'.3mf']=to3MF(parts,{title:filename(),plateCenter:[plateSize/2,plateSize/2]});download(zipSync(entries),filename()+'.zip');}},
+ {label:'Scarica kit completo',variant:'primary' as const,onClick:()=>{const r=packed();if(!r||!result)return;const entries:Record<string,Uint8Array>={'LEGGIMI.txt':strToU8(guide),'progetto.json':strToU8(JSON.stringify({version:1,params:state,extra}))};for(const p of result.parts)entries[p.id+'.stl']=toSTL([p]);for(const [i,parts]of r.plates.entries())entries['piatto-'+(i+1)+'.3mf']=to3MF(parts,{printProfile:'mechanical',title:filename(),plateCenter:printerCenter(plateSize,plateSize)});download(zipSync(entries),filename()+'.zip');}},
  {label:'Solo piastra STL',onClick:()=>{if(result)download(toSTL([result.parts[0]]),filename()+'-piastra.stl');}},
- {label:'3MF del piatto',onClick:()=>{const r=packed();if(r)download(to3MF(r.plates[plate]??[],{title:filename(),plateCenter:[plateSize/2,plateSize/2]}),filename()+'.3mf');}},
+ {label:'3MF del piatto',onClick:()=>{const r=packed();if(r)download(to3MF(r.plates[plate]??[],{printProfile:'mechanical',title:filename(),plateCenter:printerCenter(plateSize,plateSize)}),filename()+'.3mf');}},
  {label:'Pezzo selezionato',onClick:()=>{const p=result?.parts.find(p=>p.id===selected);if(p)download(toSTL([p]),p.id+'.stl');}}
 ]){const b=button(options);b.disabled=true;exports.push(b);shell.exportBar.append(b);}
 function send(r:NonNullable<typeof queued>){busy=true;worker.postMessage(r);}
@@ -92,3 +93,5 @@ worker.onmessage=e=>{busy=false;receive(e.data);if(queued){const r=queued;queued
 worker.onerror=()=>{busy=false;queued=undefined;exports.forEach(b=>b.disabled=true);shell.setStatus('Ricarica la pagina per riavviare l’anteprima.','warn');};
 try{await document.fonts.load('120px Pacifico');}catch{/* carattere di riserva */}
 await receiveSvg(loadSvg);plateTools.hidden=true;paint();rebuild();
+
+onPrinterChange(()=>{display(true);});

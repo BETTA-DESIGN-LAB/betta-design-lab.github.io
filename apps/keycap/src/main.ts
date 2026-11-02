@@ -123,6 +123,7 @@ shell.panel.append(
     } }),
     button({ label: 'Rimuovi disegno', onClick: () => { ++generation; artwork = undefined; sourceFile = undefined; hint.textContent = 'Nessun disegno caricato.'; if (state.shape === 'artwork') state.shape = 'square'; renderControls(); rebuild(); } }),
     ),
+    track('svgThicken',slider({label:'Ispessimento tratti SVG / icona',min:0,max:2,step:.05,value:state.svgThicken,unit:'mm',onInput:v=>set('svgThicken',v)})).root,
     track('designScale', slider({ label: 'Dimensione disegno', value: state.designScale, min: 10, max: 100, unit: '%', onInput: (v) => set('designScale', v) })).root,
     track('mode', segmented<Params['mode']>({ label: 'Tecnica', value: state.mode, options: [{ value: 'inlay', label: 'Intarsio' }, { value: 'relief', label: 'Rilievo' }, { value: 'engrave', label: 'Incisione' }], onChange: (v) => set('mode', v) })).root,
     track('decorationDepth', slider({ label: 'Profondità / rilievo', value: state.decorationDepth, min: 0.2, max: 2, step: 0.2, unit: 'mm', onInput: (v) => set('decorationDepth', v) })).root,
@@ -137,7 +138,7 @@ shell.panel.append(
     track('gap', slider({ label: 'Gioco pulsante / base', value: state.gap, min: 0.15, max: 0.8, step: 0.05, unit: 'mm', onInput: (v) => set('gap', v) })).root,
     track('rim', slider({ label: 'Altezza bordo', value: state.rim, min: 0, max: 3, step: 0.2, unit: 'mm', onInput: (v) => set('rim', v) })).root,
     button({ label: 'Scarica prova attacco MX', onClick: () => {
-      download(to3MF(buildFitTest(M, 0, state.capColor), { title: 'Prova MX: -0.10, 0.00, +0.10, +0.20, +0.30 mm, da sinistra' }), 'prova-attacco-mx.3mf', 'model/3mf');
+      download(to3MF(buildFitTest(M, 0, state.capColor), {printProfile:'mechanical', title: 'Prova MX: -0.10, 0.00, +0.10, +0.20, +0.30 mm, da sinistra' }), 'prova-attacco-mx.3mf', 'model/3mf');
       toast('5 campioni: da sinistra −0,10 / 0 / +0,10 / +0,20 / +0,30 mm');
     } }),
     el('p', { class: 'bdl-hint' }, 'Prototipo: verifica incastro e corsa sul tuo switch. Stampa il pulsante con faccia decorata sul piatto e il socket verso l’alto; il 3MF di stampa applica questa orientazione.'),
@@ -195,6 +196,7 @@ function validateArtwork(art: SvgArtwork) {
 }
 // Sincronizza i controlli dopo il caricamento di un progetto senza ricreare il viewer.
 function renderControls() {
+ for(const row of shell.panel.querySelectorAll<HTMLElement>('.bdl-row'))if(row.textContent?.startsWith('Ispessimento tratti SVG / icona'))row.hidden=!(artwork||state.shape==='keys')||state.shape==='stl';
   for (const control of controls) control();
   stlSection.hidden=state.shape!=='stl';connections.refresh();
   for(const sec of shell.panel.querySelectorAll<HTMLElement>('.bdl-section')){const title=sec.querySelector('h2')?.textContent;if(title==='Disegno')sec.hidden=state.shape==='stl';}
@@ -257,7 +259,7 @@ const exports = [
     const files: Record<string, Uint8Array> = {}; for (const part of mountParts) files[`${slug(part.name)}.stl`] = toSTL([printPart(part)]);
     download(zipSync(files), 'clicker-stl.zip', 'application/zip');
   } }),
-  button({ label: '3MF di stampa', variant: 'primary', onClick: () => { prepareMount(); download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), { title: TITLE }), 'clicker.3mf', 'model/3mf'); } }),
+  button({ label: '3MF di stampa', variant: 'primary', onClick: () => { prepareMount(); download(to3MF(view==='separate'?separateParts(mountParts.map(printPart)):printAssembly(mountParts, state.size), {printProfile:'mechanical', title: TITLE }), 'clicker.3mf', 'model/3mf'); } }),
 ];
 shell.exportBar.append(...exports);
 let rebuildTimer:ReturnType<typeof setTimeout>;

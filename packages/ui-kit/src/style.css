@@ -289,3 +289,19 @@ a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--b
 .bdl-interior-list{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.bdl-interior-list button{font-size:12px}
 .bdl-interior-inspector{display:grid;gap:10px;margin:14px 0}.bdl-interior-inspector label{display:grid;gap:5px;font-size:12px}.bdl-interior-inspector input{width:100%;min-height:38px;box-sizing:border-box}
 .bdl-interior-rooms{margin:12px 0;padding:8px 12px;border-left:2px solid #ff4b16}.bdl-interior-rooms p{margin:5px 0}
+
+/* Scelta stampante condivisa */
+.bdl-printer-button{max-width:330px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.bdl-printer-dialog{color:var(--bdl-text,#111);background:var(--bdl-surface,#fff);border:1px solid var(--bdl-border,#ddd);border-radius:24px;padding:28px;width:min(520px,calc(100vw - 32px));max-height:90dvh;box-sizing:border-box;box-shadow:0 24px 90px #0003}
+.bdl-printer-dialog::backdrop{background:#0006;backdrop-filter:blur(6px)}
+.bdl-printer-dialog h2{margin:0 0 12px;font-size:26px;letter-spacing:-.04em}
+.bdl-printer-dialog label{display:flex;flex-direction:column;gap:7px;font-size:13px;margin:15px 0}
+.bdl-printer-dialog select,.bdl-printer-dialog input{font:inherit;color:inherit;background:var(--bdl-bg,#f5f5f5);border:1px solid var(--bdl-border,#ddd);border-radius:12px;padding:12px;width:100%;box-sizing:border-box}
+.bdl-printer-dimensions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.bdl-printer-dimensions[hidden]{display:none}
+.bdl-printer-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+@media(max-width:600px){.bdl-printer-button{max-width:145px;font-size:11px}.bdl-printer-dialog{padding:22px}.bdl-printer-actions>.bdl-btn{width:100%}}
+
+.bdl-printer-warning{position:absolute;top:85px;left:20px;right:20px;margin:auto;max-width:480px;z-index:4;background:var(--bdl-surface,#fff);color:var(--bdl-text,#111);border:1px solid #ff4b16;border-radius:14px;padding:12px;font-size:13px;pointer-events:none}
+
+.bdl-desk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}

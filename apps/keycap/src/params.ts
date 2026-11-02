@@ -3,6 +3,7 @@ import { FILAMENTS } from '@bdl/brand';
 import { DEFAULT_BLOCKS, readBlocks } from './blocks.ts';
 
 export interface Params {
+ svgThicken:number;
   [key: string]: string | number | boolean;
   connection: 'auto'|'seat'|'pins';
   product: 'clicker' | 'keycap';
@@ -17,7 +18,7 @@ export interface Params {
   stlScale:number; cutHeight:number; mxTravel:number; mxCalibration:number;
   baseColor: string; capColor: string; artColor: string;
 }
-export const DEFAULTS: Params = { connection: 'auto',
+export const DEFAULTS: Params = { svgThicken:0,connection: 'auto',
   stlScale:1,cutHeight:20,mxTravel:4,mxCalibration:0, product: 'clicker', shape: 'square', size: 35, topThickness: 1.6,
   decorationDepth: 0.8, designScale: 75, mode: 'inlay', gap: 0.35,
   stemFit: 0.1, socketFit: 0.15, rim: 2.4, switches: 1, spacing: 20,
@@ -32,7 +33,7 @@ export function sanitize(input: Params): Params {
     if (choices.includes(String(input[key]))) (p[key] as string) = input[key];
   }
   const limits: Record<string, [number, number]> = {
-    stlScale:[0.1,10],cutHeight:[1,300],mxTravel:[2,5],mxCalibration:[-1,1],
+    svgThicken:[0,2],stlScale:[0.1,10],cutHeight:[1,300],mxTravel:[2,5],mxCalibration:[-1,1],
     size: [18, 100], topThickness: [1.2, 4], decorationDepth: [0.2, 2],
     designScale: [10, 100], gap: [0.15, 0.8], stemFit: [-0.1, 0.35],
     socketFit: [0, 0.5], rim: [0, 3], switches: [1, 3], spacing: [19, 30],

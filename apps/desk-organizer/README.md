@@ -1,0 +1,5 @@
+# Desk organizer
+
+Vassoio liscio opzionale e scomparti indipendenti con fondo piatto. Ogni modulo può essere arrotondato o squadrato con un piccolo raccordo di 2 mm. Posizionamento libero, nessun binario. Onda e Canneté conservano la finitura scelta. Base troppo grande suddivisa con chiavi nascoste inferiori. Verificato via software, non ancora stampato fisicamente.
+
+Adattamento automatico: l’interfaccia normalizza il progetto rispetto al piatto corrente (margine totale 14 mm), compresa l’apertura di vecchi link e progetti. Base intera attiva per impostazione iniziale. Ridimensionando il vassoio si scalano pianta e posizioni; se necessario i moduli vengono ricomposti con distanze strutturali, senza cambiare nomi, forme o altezze. La base più grande sezionata resta disponibile disattivando Base intera. I moduli aggiunti si ridispongono automaticamente (massimo 8). Kit completo eventualmente su più piatti: base intera non significa tutti i pezzi sullo stesso piatto. Test mirati in scripts/test-desk-auto-fit.ts.

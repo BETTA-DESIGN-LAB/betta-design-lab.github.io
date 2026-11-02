@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 // Geometria del sottobicchiere. Funzione pura: parametri → pezzi (base + motivo).
 // Non tocca il DOM, così la stessa funzione gira nel browser e nei test Node.
 
@@ -22,7 +23,7 @@ export function buildCoaster(M: ManifoldToplevel, p: CoasterParams, artwork?: Sv
     if (p.svgUse !== 'none' && !artwork) throw new Error('Carica un SVG per usare questa modalità.');
     const svg = artwork && p.svgUse !== 'none' ? svgSection(M, s, artwork, p.svgUse === 'shape') : null;
     const shape = p.svgUse === 'shape' && svg
-      ? s.t(svg.scale([p.size, p.size]))
+      ? thickenSvg(s,s.t(svg.scale([p.size, p.size])),p.svgThicken)
       : outline(M, s, p.shape, p.size, p.cornerRadius);
     if (p.svgUse === 'shape') {
       const islands = shape.decompose().map((part) => s.t(part));
@@ -59,7 +60,7 @@ export function buildCoaster(M: ManifoldToplevel, p: CoasterParams, artwork?: Sv
 
     if (p.pattern !== 'none' || p.svgUse === 'decoration') {
       const drawing = p.svgUse === 'decoration' && svg
-        ? s.t(s.t(svg.scale([p.size * p.svgScale / 100, p.size * p.svgScale / 100])).rotate(p.angle))
+        ? thickenSvg(s,s.t(s.t(svg.scale([p.size * p.svgScale / 100, p.size * p.svgScale / 100])).rotate(p.angle)),p.svgThicken)
         : patternSection(M, s, p, field);
       const pat2d = s.t(drawing.intersect(field));
       if (p.svgUse === 'decoration' && svg) {

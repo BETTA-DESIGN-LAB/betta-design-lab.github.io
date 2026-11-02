@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 import {Scope,toMeshData,type ManifoldToplevel,type CrossSection,type Manifold,type Part,type Vec2} from '@bdl/geometry';
 import type {SvgArtwork} from '../../coaster/src/svg.ts';
 import {sanitize,type Params} from './params.ts';
@@ -26,7 +27,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={},seated=fa
  }
  drawings.push({shape:s.t(text.translate([p.x,p.y])),id:'text',color:p.artColor});
  }
- if(design.extra)drawings.push({shape:s.t(s.t(fit(design.extra,p.extraSize,p.extraSize).rotate(p.extraAngle)).translate([p.extraX,p.extraY])),id:'symbol',color:p.extraColor});
+ if(design.extra)drawings.push({shape:s.t(s.t(thickenSvg(s,fit(design.extra,p.extraSize,p.extraSize),p.svgThicken).rotate(p.extraAngle)).translate([p.extraX,p.extraY])),id:'symbol',color:p.extraColor});
  const append=(solid:Manifold,id:string,name:string,color:string)=>{for(const [i,component]of solid.decompose().map(a=>s.t(a)).entries())if(component.volume()>1e-5)parts.push({id:`${id}-${i}`,name:`${name}${i?' '+(i+1):''}`,color,mesh:toMeshData(component)});};
  if(p.model==='flat'){
  let outline:CrossSection;

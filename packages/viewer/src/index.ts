@@ -1,3 +1,4 @@
+import { printerPlate, choiceVolume, getPrinterChoice, onPrinterChange } from '@bdl/brand';
 // Anteprima 3D condivisa da tutti i generatori: three.js, asse Z verso l'alto (come
 // negli slicer), piatto di stampa con griglia, luci morbide, colori per pezzo.
 
@@ -46,6 +47,19 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   host.appendChild(renderer.domElement);
   renderer.domElement.classList.add('bdl-canvas');
 
+  const printerWarning=document.createElement('div');
+  printerWarning.className='bdl-printer-warning';printerWarning.setAttribute('role','status');host.append(printerWarning);
+  let checkedParts:readonly Part[]=[];
+  const checkPrinter=()=>{
+    const v=choiceVolume(getPrinterChoice());let oversized=false;
+    if(v)for(const p of checkedParts){const a=p.mesh.positions;let minX=Infinity,minY=Infinity,minZ=Infinity,maxX=-Infinity,maxY=-Infinity,maxZ=-Infinity;
+      for(let i=0;i<a.length;i+=3){minX=Math.min(minX,a[i]);maxX=Math.max(maxX,a[i]);minY=Math.min(minY,a[i+1]);maxY=Math.max(maxY,a[i+1]);minZ=Math.min(minZ,a[i+2]);maxZ=Math.max(maxZ,a[i+2]);}
+      if(maxX-minX>v[0]||maxY-minY>v[1]||maxZ-minZ>v[2])oversized=true;
+    }
+    printerWarning.textContent=oversized?'Un pezzo supera il volume della stampante scelta. Riduci le misure prima di stampare.':'';
+    printerWarning.hidden=!oversized;
+  };
+  const stopPrinterCheck=onPrinterChange(checkPrinter);
   const scene = new THREE.Scene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
@@ -77,6 +91,13 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   plateGroup.add(plateMesh, grid);
   scene.add(plateGroup);
 
+  let fallbackPlate:[number,number]=[plate,plate];
+  const applyPrinterPlate=()=>{
+    const [w,d]=printerPlate(...fallbackPlate);
+    plateGroup.scale.set(w/plate,d/plate,1);
+  };
+  const stopPrinter=onPrinterChange(applyPrinterPlate);
+  applyPrinterPlate();
   const applyTheme = () => {
     const css = getComputedStyle(host);
     const read = (name: string, fb: string) => css.getPropertyValue(name).trim() || fb;
@@ -202,6 +223,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
 
   return {
     setParts(parts, o = {}) {
+      checkedParts=parts;checkPrinter();
       for (const child of [...model.children]) {
         const m = child as THREE.Mesh;
         m.geometry.dispose();
@@ -229,13 +251,14 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     setMoveEnabled(enabled) { moveEnabled=enabled; renderer.domElement.style.cursor=enabled?'grab':''; },
     setPlateSize(width, depth) {
       if (!Number.isFinite(width) || !Number.isFinite(depth) || width <= 0 || depth <= 0) return;
-      plateGroup.scale.set(width / plate, depth / plate, 1);
+      fallbackPlate=[width,depth]; applyPrinterPlate();
     },
     selectPart(id) { selected = id; highlight(); },
     fit() { place(camera.position.clone().sub(controls.target)); },
     setView(v) { place(views[v].clone()); },
     snapshot() { renderer.render(scene, camera); return renderer.domElement.toDataURL('image/png'); },
     dispose() {
+      stopPrinter();stopPrinterCheck();printerWarning.remove();
       cancelAnimationFrame(raf);
       ro.disconnect();
       themeObs.disconnect();

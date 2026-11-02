@@ -102,8 +102,10 @@ const svgMode = segmented<CoasterParams['svgUse']>({
   },
 });
 const svgScaleRow = slider({ label: 'Dimensione SVG', min: 10, max: 100, step: 1, value: state.svgScale, unit: '%', onInput: (v) => set('svgScale', v) });
+const thickenRow=slider({label:'Ispessimento tratti SVG / icona',min:0,max:2,step:.05,value:state.svgThicken,unit:'mm',onInput:v=>set('svgThicken',v)});
 const clearanceRow = slider({ label: 'Gioco intarsio', min: 0, max: 0.5, step: 0.05, value: state.svgClearance, unit: 'mm', hint: '0 per stampa multicolore; aumenta il gioco per inserire pezzi stampati separatamente.', onInput: (v) => set('svgClearance', v) });
 function syncSvgControls() {
+ thickenRow.root.hidden=!artwork||state.svgUse==='none';
   clearanceRow.root.hidden = state.svgUse !== 'decoration' || state.patternMode !== 'inlay';
   svgScaleRow.root.hidden = state.svgUse !== 'decoration';
   shapeSeg.root.hidden = state.svgUse === 'shape';
@@ -177,7 +179,7 @@ shell.panel.append(
   ),
   section('SVG personale',
     el('div', { class: 'bdl-row' }, el('label', { for: 'svg-file' }, 'Carica SVG'), svgInput),
-    svgName, svgMode.root, svgScaleRow.root, clearanceRow.root,
+    svgName, svgMode.root, svgScaleRow.root, thickenRow.root, clearanceRow.root,
     el('p', { class: 'bdl-hint' }, 'Decorazione: aree piene e linee, con lo spessore originale. Sagoma: solo aree piene; converti i testi in tracciati. Il file resta sul tuo dispositivo e va ricaricato dopo un aggiornamento della pagina; non è incluso nei link. La sagoma richiede una forma connessa.'),
     button({ label: 'Rimuovi SVG', variant: 'ghost', size: 'sm', onClick: () => {
       importVersion++; artwork = undefined; svgName.textContent = 'Nessun SVG caricato.'; svgMode.set('none'); set('svgUse', 'none');

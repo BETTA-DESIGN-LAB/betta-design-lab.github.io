@@ -1,3 +1,4 @@
+import {thickenSvg} from '../../shared/svg-thickness.ts';
 import { artworkSection } from '../../shared/artwork-geometry.ts';
 import { Scope,toMeshData,type ManifoldToplevel,type CrossSection,type Manifold,type Part, regularPolygon } from '@bdl/geometry';
 import type { SvgArtwork } from '../../coaster/src/svg.ts';
@@ -13,7 +14,7 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  try {
  const C=M.CrossSection;const decorations:{solid:Manifold;id:string;color:string}[]=[];
  const section=(a:SvgArtwork)=>artworkSection(M,s,a);
- const fit=(a:SvgArtwork,w:number,h:number)=>{const c=section(a),b=c.bounds(),k=Math.min(w/(b.max[0]-b.min[0]),h/(b.max[1]-b.min[1]));return s.t(c.scale([k,k]));};
+ const fit=(a:SvgArtwork,w:number,h:number)=>{const c=section(a),b=c.bounds(),k=Math.min(w/(b.max[0]-b.min[0]),h/(b.max[1]-b.min[1]));return thickenSvg(s,s.t(c.scale([k,k])),a===design.extra||a===design.cover||(a===design.main&&(p.model==='svg'||p.model==='music'))?p.svgThicken/(a===design.main&&svgBody?p.scale/100:1):0);};
  const rounded=(w:number,h:number)=>s.t(s.t(C.square([w-6,h-6],true)).offset(3,'Round',2,48));
  const fillHoles=(c:CrossSection)=>s.t(C.union(c.toPolygons().map(r=>s.t(C.ofPolygons([r],'EvenOdd')))));
  const extra=design.extra?s.t(s.t(fit(design.extra,p.extraSize,p.extraSize).rotate(p.extraAngle)).translate([p.extraX,p.extraY])):null;
