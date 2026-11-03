@@ -9,3 +9,7 @@ La bombatura usa un campo di distanza al bordo. La matrice viene liberata anche 
 L'anteprima dell'oggetto formato è illustrativa, non una simulazione del materiale. Non viene esportata al posto delle sagome piatte. Export ZIP: sei STL singoli, 3MF divisi su piatti, progetto JSON e istruzioni di montaggio. Nessun preset stampante nei 3MF.
 
 La stampa fisica deve validare il materiale per gli stampi, riscaldamento, assottigliamento, tenuta delle linguette e tolleranza della chiusura. Usare prima un campione piccolo. Tenere il generatore in beta fino al collaudo fisico.
+
+## Guida alla formatura
+
+Il pulsante Istruzioni apre la guida rapida con la sagoma reale e le quote del progetto. Lo ZIP include il PDF illustrato di quattro pagine, guida-personalizzata.html e LEGGIMI-montaggio.txt, oltre ai sei STL e ai piatti 3MF. I testi condivisi sono in src/guide-content.json; scripts/create-thermoform-guide.py rigenera il PDF con ReportLab. Le immagini sono schemi generali; formatura e tenuta devono ancora essere validate fisicamente.
