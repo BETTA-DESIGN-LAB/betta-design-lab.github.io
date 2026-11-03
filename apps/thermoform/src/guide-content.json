@@ -1,0 +1,29 @@
+{
+  "parts": [
+    ["01", "Sagoma piatta fronte", "La prima metà da scaldare e formare. Può contenere il viso."],
+    ["02", "Sagoma piatta retro", "La seconda metà, speculare al fronte."],
+    ["03", "Stampo concavo", "La matrice che riceve la sagoma e il convesso."],
+    ["04", "Stampo convesso", "Il pezzo bombato che preme la sagoma nella matrice."],
+    ["05", "Raccordo filettato", "Accoglie le linguette delle due metà nelle sue feritoie."],
+    ["06", "Tappo con occhiello", "Si avvita sul raccordo e trattiene le linguette. L'occhiello serve per appendere."]
+  ],
+  "steps": [
+    ["Prepara e prova i pezzi", "Stampa le sagome 01 e 02 piatte. La rete è già nella geometria: non eliminare gli strati superiori e inferiori nello slicer. Stampa separatamente stampi 03 e 04, raccordo 05 e tappo 06. A freddo prova filettatura e linguette, senza forzare."],
+    ["Allinea la prima metà", "Appoggia la sagoma 01 sulla matrice 03, con il bordo allineato al suo profilo. La linguetta deve restare nel canale dedicato, fuori dalla zona bombata. Se ci sono due impronte, scegli quella con lo stesso contorno: fronte e retro sono speculari."],
+    ["Scalda gradualmente", "Per una prima prova usa una piccola sagoma a rete in PLA e stampi più resistenti al calore, per esempio PETG. Muovi l'asciugacapelli sulla rete fino a renderla modellabile, senza deformare bordo, linguetta o stampi. Tempi e distanza dipendono dal materiale e dall'apparecchio: non c'è un valore universale."],
+    ["Forma e lascia raffreddare", "Capovolgi il convesso 04 con la bombatura rivolta verso la matrice. Controlla l'allineamento e premi progressivamente senza forzare. Mantieni i pezzi in posizione fino al raffreddamento; poi separa gli stampi ed estrai la metà. Non tirare la rete ancora calda."],
+    ["Ripeti per il retro", "Lascia raffreddare gli stampi e ripeti con la sagoma 02 nell'impronta corrispondente. Non scaldare le due sagome insieme. Se la rete si lacera, il bordo si deforma o la linguetta perde forma, ristampa la metà anziché forzare il montaggio."],
+    ["Chiudi le due metà", "Accosta i bordi con le bombature rivolte verso l'esterno. Inserisci le linguette insieme nelle feritoie del raccordo 05 e avvita il tappo 06 a mano. Non servono colla, viti metalliche o clip inferiori. Verifica che le metà siano trattenute prima di usare l'occhiello. Per aprire, svita il tappo e libera le linguette."]
+  ],
+  "notes": [
+    "Prima esegui un campione piccolo: formatura e tenuta della chiusura non sono ancora validate da prove fisiche del nostro kit.",
+    "La modalità Piena si stira meno facilmente della rete: richiede un collaudo specifico e non è equivalente alla trama aperta.",
+    "Con SVG o STL asimmetrici possono comparire due impronte speculari sullo stesso stampo. Un cuore ha la chiusura sul lobo, non nella V centrale.",
+    "L'anteprima formata è indicativa, non simula lo stiramento del materiale. Gli STL importati forniscono il profilo XY, non la superficie originale.",
+    "Proteggi le mani, lavora in un ambiente ventilato e segui le istruzioni dell'asciugacapelli. Niente fiamme. Non usare il kit come contenitore certificato per alimenti o come giocattolo."
+  ],
+  "sources": [
+    ["MeshMolded - guida alla termoformatura", "https://meshmolded.com/thermoforming"],
+    ["3D Printing Origin - Thermoforming Snowman", "https://www.patreon.com/3DPrintingOrigin/posts/3d-printable-170996458"]
+  ]
+}
