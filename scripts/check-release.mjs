@@ -19,6 +19,7 @@ const assets=readdirSync(resolve(dist,'assets'));
 assert.ok(assets.some(f=>f.endsWith('.wasm')),'Motore 3D non incluso');
 assert.ok(assets.filter(f=>/^worker-.*\.js$/.test(f)).length>=3,'Worker non inclusi');
 assert.ok(assets.some(f=>/^guida-montaggio-.*\.pdf$/.test(f)),'Guida lampade non inclusa');
+assert.ok(assets.some(f=>/^guida-thermoform-.*\.pdf$/.test(f)),'Guida Thermoform non inclusa');
 for(const asset of assets.filter(f=>f.endsWith('.js'))){
  const content=readFileSync(resolve(dist,'assets',asset),'utf8');
  for(const match of content.matchAll(/["'](\.\.?\/[^"']+\.(?:wasm|pdf|js))["']/g))
