@@ -91,8 +91,11 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  const floor=3,gap=p.sheet+p.clearance;
  const dense=(section:CrossSection)=>t(t(section.extrude(1)).refineToLength(Math.max(2.5,Math.min(p.width,p.height)/32)));
  const flange=t(t(outline.offset(5,'Round',2,40)).add(rect(20,16,neckX,neckY+3)));
- const cavity=t(dense(outline).warp(v=>{const z=v[2],low=floor+p.dome-dome(v[0],v[1]);v[2]=low+z*(p.dome+floor+gap+1-low);}));
- const tabChannel=t(t(t(tab.offset(p.clearance,'Round',2,24)).extrude(p.sheet+p.clearance*2)).translate([0,0,floor+p.dome-p.clearance]));
+ // La sagoma piatta deve entrare senza press-fit, anche prima del riscaldamento.
+ const release=Math.max(.65,p.clearance+.35);
+ const cavityOutline=t(outline.offset(release,'Round',2,48));
+ const cavity=t(dense(cavityOutline).warp(v=>{const z=v[2],low=floor+p.dome-dome(v[0],v[1]);v[2]=low+z*(p.dome+floor+gap+1-low);}));
+ const tabChannel=t(t(t(tab.offset(release,'Round',2,24)).extrude(p.sheet+p.clearance*2)).translate([0,0,floor+p.dome-p.clearance]));
  let female=t(t(t(flange.extrude(floor+p.dome+gap)).subtract(cavity)).subtract(tabChannel));
  const maleOutline=t(outline.offset(-p.clearance,'Round',2,32));if(maleOutline.isEmpty())throw new Error('Sagoma troppo sottile per lo stampo.');
  const bump=t(dense(maleOutline).warp(v=>{v[2]=floor+v[2]*dome(v[0],v[1]);}));
@@ -100,7 +103,14 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  // Libera anche la mesh reale dello stampo accoppiato: triangolazioni differenti
  // su profili concavi non devono creare piccole interferenze fra le superfici.
  const envelope=t(t(male.scale([1,1,-1])).translate([0,0,2*floor+p.dome+gap-.2]));
- female=t(female.subtract(envelope));let printableMale=male;
+ female=t(female.subtract(envelope));
+ // Due accessi superficiali al bordo per sollevare la sagoma senza piegarla.
+ const edgePoints=rings.flat(),left=edgePoints.reduce((a,b)=>a[0]<b[0]?a:b),right=edgePoints.reduce((a,b)=>a[0]>b[0]?a:b);
+ for(const [point,sign]of [[left,-1],[right,1]] as const){
+  const notch=t(t(M.Manifold.cube([8,10,gap+1.2],true)).translate([point[0]+sign*2,point[1],floor+p.dome+(gap-1)/2]));
+  female=t(female.subtract(notch));
+ }
+ let printableMale=male;
  if(dual){
   // Due impronte sullo stesso pezzo permettono sagome asimmetriche senza
   // perdere la corrispondenza quando il retro viene capovolto per il montaggio.
@@ -128,12 +138,18 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  const cyl=(h:number,r:number)=>t(M.Manifold.cylinder(h,r,r,72));
  const shaft=t(cyl(8,6).add(thread(6))),bore=cyl(9,3.6);
  const slots=t(t(rect(12,p.sheet*2+p.clearance*2).extrude(6.1)).translate([0,0,-.1]));
- const connector=t(t(shaft.subtract(bore)).subtract(slots));put('connector','05 · Raccordo filettato',p.moldColor,connector);
+ // Il perno attraversa i fori 4 x 2 mm già presenti sulle linguette.
+ const pinWidth=3.2,pinHeight=1.2,pinLength=11.2,pinZ=3;
+ const pinPocket=t(t(M.Manifold.cube([pinWidth+p.clearance*2,20,pinHeight+p.clearance*2],true)).translate([0,0,pinZ]));
+ const connector=t(t(t(shaft.subtract(bore)).subtract(slots)).subtract(pinPocket));put('connector','05 · Raccordo filettato',p.moldColor,connector);
  const lead=t(M.Manifold.cylinder(2,6.85+p.clearance,6+p.clearance,72));
  const socket=t(t(cyl(8.2,6+p.clearance).add(thread(6,p.clearance))).add(lead));
  let cap=t(cyl(10,8).subtract(socket));const eye=t(t(circle(5).subtract(circle(2.5))).extrude(3));
  cap=t(cap.add(t(t(eye.rotate([90,0,0])).translate([0,1.5,12.5]))));put('cap','06 · Tappo con occhiello',p.moldColor,cap);
- for(const [id,solid]of [['formed-connector',connector],['formed-cap',cap]] as const)formed.push({id,name:id==='formed-cap'?'Tappo con occhiello':'Raccordo',color:p.moldColor,mesh:toMeshData(t(t(solid.rotate([-90,0,0])).translate([neckX,neckY+2,0])))});
+ const pin=t(t(M.Manifold.cube([pinWidth,pinLength,pinHeight],true)).translate([0,0,pinHeight/2]));
+ put('lock','07 · Perno di blocco',p.moldColor,pin);
+ const seatedPin=t(pin.translate([0,0,pinZ-pinHeight/2]));
+ for(const [id,solid]of [['formed-connector',connector],['formed-cap',cap],['formed-lock',seatedPin]] as const)formed.push({id,name:id==='formed-cap'?'Tappo con occhiello':id==='formed-lock'?'Perno di blocco':'Raccordo',color:p.moldColor,mesh:toMeshData(t(t(solid.rotate([-90,0,0])).translate([neckX,neckY+2,0])))});
  return {parts,formed,warnings};
  }finally{s.free();}
 }

@@ -12,7 +12,7 @@ const fromPart=(s:Scope,part:Part)=>{const m=new M.Mesh({numProp:3,vertPropertie
 let cases=0;
 for(const shape of ['ghost','pumpkin','heart','star','round'] as const)for(const pattern of ['solid','grid','diagonal'] as const){
  const p=sanitize({...DEFAULTS,shape,pattern}),r=build(M,p),s=new Scope();try{
-  assert.equal(r.parts.length,6);assert.equal(new Set(r.parts.map(p=>p.id)).size,6);
+  assert.equal(r.parts.length,7);assert.equal(new Set(r.parts.map(p=>p.id)).size,7);
   for(const part of r.parts){const solid=fromPart(s,part);assert.equal(solid.status(),'NoError',shape+part.id);assert.ok(solid.volume()>0);assert.ok(Math.abs(bounds([part]).min[2])<.001,'Pezzo appoggiato');assert.equal(solid.decompose().map(p=>s.t(p)).length,1,'Un solo corpo per '+shape+part.id);}
   for(const part of r.parts.slice(0,2))assert.ok(Math.abs(bounds([part]).max[2]-p.sheet)<.001,'Sagome realmente piatte');
   if(shape==='ghost'||shape==='pumpkin'){
@@ -36,10 +36,31 @@ for(const shape of ['ghost','pumpkin','heart','star','round'] as const)for(const
  }finally{s.free();}cases++;
 }
 const svg:SvgArtwork={name:'Sagoma esterna',shapes:[[[[-.5,-.5],[.5,-.5],[.5,.5],[0,.5],[-.5,.1]],[[-.1,-.1],[.1,-.1],[.1,.1],[-.1,.1]]]]};
-for(const shape of ['svg','stl'] as const){const p={...DEFAULTS,shape},r=build(M,p,svg),s=new Scope();try{assert.equal(r.parts.length,6);assert.match(r.warnings[0],/asimmetrico/);const female=fromPart(s,r.parts[2]),male=fromPart(s,r.parts[3]);const closed=s.t(s.t(male.rotate([0,180,0])).translate([0,0,6+p.dome+p.sheet+p.clearance]));assert.ok(s.t(female.intersect(closed)).volume()<.01,'Stampi speculari accoppiati');assert.ok(bounds([r.parts[2]]).max[0]-bounds([r.parts[2]]).min[0]>p.width*2);}finally{s.free();}}
+for(const shape of ['svg','stl'] as const){const p={...DEFAULTS,shape},r=build(M,p,svg),s=new Scope();try{assert.equal(r.parts.length,7);assert.match(r.warnings[0],/asimmetrico/);const female=fromPart(s,r.parts[2]),male=fromPart(s,r.parts[3]);const closed=s.t(s.t(male.rotate([0,180,0])).translate([0,0,6+p.dome+p.sheet+p.clearance]));assert.ok(s.t(female.intersect(closed)).volume()<.01,'Stampi speculari accoppiati');assert.ok(bounds([r.parts[2]]).max[0]-bounds([r.parts[2]]).min[0]>p.width*2);}finally{s.free();}}
 assert.throws(()=>build(M,{...DEFAULTS,shape:'svg'}),/Carica/);
 assert.equal(sanitize({...DEFAULTS,width:NaN}).width,DEFAULTS.width);
-const cube=M.Manifold.cube([20,30,10]);try{const m=cube.getMesh();const fixture:Part={id:'test',name:'STL',color:'#ffffff',mesh:{positions:new Float32Array(m.vertProperties),indices:new Uint32Array(m.triVerts)}};const bytes=toSTL([fixture]);const profile=stlProfile(M,parseSTL(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer));assert.equal(build(M,{...DEFAULTS,shape:'stl'},profile).parts.length,6);}finally{cube.delete();}
+const cube=M.Manifold.cube([20,30,10]);try{const m=cube.getMesh();const fixture:Part={id:'test',name:'STL',color:'#ffffff',mesh:{positions:new Float32Array(m.vertProperties),indices:new Uint32Array(m.triVerts)}};const bytes=toSTL([fixture]);const profile=stlProfile(M,parseSTL(bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer));assert.equal(build(M,{...DEFAULTS,shape:'stl'},profile).parts.length,7);}finally{cube.delete();}
 assert.throws(()=>validateArtwork({shapes:[[[[NaN,0],[1,0],[1,1]]]]}),/Coordinate/);
 assert.equal(validateArtwork(JSON.parse(JSON.stringify(svg)))?.shapes.length,1);
+// Regressione dalla prova fisica: sagoma libera a freddo, linguette trattenute.
+for(const sheet of [.6,.8,1.6])for(const clearance of [.2,.3,.6]){
+ const p=sanitize({...DEFAULTS,shape:'round',width:63,height:71,sheet,clearance}),r=build(M,p),s=new Scope();
+ try{
+  const front=fromPart(s,r.parts[0]),back=fromPart(s,r.parts[1]),female=fromPart(s,r.parts[2]),connector=fromPart(s,r.parts[4]),cap=fromPart(s,r.parts[5]),pin=fromPart(s,r.parts[6]);
+  for(const dz of [0,1,3])for(const [x,y]of [[0,0],[.4,.4],[-.4,-.4]]){
+   const cold=s.t(front.translate([x,y,3+p.dome+dz]));
+   assert.ok(s.t(female.intersect(cold)).volume()<.001,'La sagoma deve entrare a freddo con margine laterale');
+  }
+  const seated=s.t(pin.translate([0,0,3-1.2/2]));
+  assert.ok(s.t(connector.intersect(seated)).volume()<.001,'Il perno deve passare nel raccordo');
+  assert.ok(s.t(cap.intersect(seated)).volume()<.001,'Il tappo deve avvitarsi con il perno inserito');
+  const neckY=bounds([r.parts[0]]).max[1]-8;
+  const tabs=[s.t(s.t(front.rotate([90,0,0])).translate([0,0,-neckY-2])),s.t(s.t(s.t(back.scale([1,1,-1])).rotate([90,0,0])).translate([0,0,-neckY-2]))];
+  for(const tab of tabs){
+   assert.ok(s.t(tab.intersect(seated)).volume()<.001,'Il perno deve attraversare il foro della linguetta');
+   for(const z of [-1.5,1.5])assert.ok(s.t(s.t(tab.translate([0,0,z])).intersect(seated)).volume()>.05,'La linguetta non deve sfilarsi dal perno');
+  }
+  for(const y of [-2,2])assert.ok(s.t(s.t(seated.translate([0,y,0])).intersect(cap)).volume()>.05,'Il tappo deve impedire la fuoriuscita laterale del perno');
+ }finally{s.free();}
+}
 console.log(`Thermoform: ${cases} kit, sagome piatte, solidi uniti, stampi senza collisioni, filetti ed export verificati; SVG/STL inclusi.`);
