@@ -1,6 +1,6 @@
 # Thermoform — prototipo
 
-Generatore originale di otto parti: sagoma piatta fronte, retro speculare, matrice concava, convesso, raccordo filettato, tappo con occhiello perno trasversale e clip inferiore. Forme pronte, SVG esterno unito o profilo XY di uno STL chiuso. Non riproduce la superficie originale degli STL.
+Generatore originale di otto parti: sagoma piatta fronte, retro speculare, matrice concava, convesso, raccordo filettato, tappo con occhiello, perno trasversale e clip inferiore. Forme pronte, SVG esterno unito o profilo XY di uno STL chiuso. Non riproduce la superficie originale degli STL.
 
 Ogni modifica rigenera il kit in un worker. La trama è geometria esplicita, non dipende dall'infill dello slicer. Per contorni asimmetrici ogni stampo contiene due impronte speculari collegate: rimangono due stampi ma occupano più spazio. Il convesso è speculare per combaciare con la matrice dopo un vero capovolgimento attorno a Y.
 
@@ -12,7 +12,7 @@ La stampa fisica deve validare il materiale per gli stampi, riscaldamento, assot
 
 ## Guida alla formatura
 
-Il pulsante Istruzioni apre la guida rapida con la sagoma reale e le quote del progetto. Lo ZIP include il PDF illustrato di sette pagine, guida-personalizzata.html e LEGGIMI-montaggio.txt, oltre ai otto STL e ai piatti 3MF. I testi condivisi sono in src/guide-content.json; scripts/create-thermoform-guide.py rigenera il PDF con ReportLab. Le immagini sono schemi generali; formatura e tenuta devono ancora essere validate fisicamente.
+Il pulsante Istruzioni apre la guida rapida con la sagoma reale e le quote del progetto. Lo ZIP include il PDF illustrato di sette pagine, guida-personalizzata.html e LEGGIMI-montaggio.txt, oltre agli otto STL e ai piatti 3MF. I testi condivisi sono in src/guide-content.json; scripts/create-thermoform-guide.py rigenera il PDF con ReportLab. Le immagini sono schemi generali; formatura e tenuta devono ancora essere validate fisicamente.
 
 ## Revisione del 4 novembre 2026
 
@@ -20,4 +20,4 @@ La prova fisica ha rilevato interferenza a freddo nella matrice e sfilamento del
 
 Le illustrazioni del PDF usano i triangoli reali del kit tondo 63 × 71 mm. Rigenerazione: node --experimental-strip-types scripts/export-thermoform-guide.ts, poi python scripts/render-thermoform-guide.py e python scripts/create-thermoform-guide.py. I render richiedono NumPy e Pillow, il PDF ReportLab. Intermedi in tmp/pdfs; nessuna geometria del generatore viene modificata. Le sezioni sono solo illustrative e vengono segnalate nelle didascalie.
 
-Blocco inferiore: due linguette con foro 4 × 2 mm, canali dedicati in entrambi gli stampi e clip a U con denti arrotondati. Clip orientata con il dorso sul piatto; dimensioni dipendenti da spessore e gioco. Nuove sagome e stampi necessari: le sagome precedenti non hanno le linguette inferiori. Raccordo, tappo e perno superiore invariati. La ritenzione elastica richiede collaudo fisico.
+Blocco inferiore: due zone rinforzate interne al bordo con foro 3,4 × 1,6 mm e clip a U larga 5,8 mm con denti arrotondati. Nessuna linguetta sporgente; sede localmente piana condivisa dagli stampi. Clip orientata con il dorso sul piatto; dimensioni dipendenti da spessore e gioco. Nuove sagome e stampi necessari: le sagome precedenti non hanno le linguette inferiori. Raccordo, tappo e perno superiore invariati. La ritenzione elastica richiede collaudo fisico.
