@@ -34,20 +34,25 @@
       "07",
       "Perno di blocco",
       "Attraversa raccordo e fori delle due linguette. Va inserito prima di avvitare il tappo."
+    ],
+    [
+      "08",
+      "Clip inferiore",
+      "Piccola clip a U nella sede del bordo inferiore: i denti entrano nei fori delle due zone rinforzate."
     ]
   ],
   "steps": [
     [
       "Prepara e prova i pezzi",
-      "Stampa le sagome 01 e 02 piatte. La rete è già nella geometria: non eliminare gli strati superiori e inferiori nello slicer. Stampa separatamente stampi 03 e 04, raccordo 05, tappo 06 e perno 07. A freddo prova filettatura e linguette, senza forzare."
+      "Stampa le sagome 01 e 02 piatte. La rete è già nella geometria: non eliminare gli strati superiori e inferiori nello slicer. Stampa separatamente stampi 03 e 04, raccordo 05, tappo 06 perno 07 e clip 08. A freddo prova filettatura e linguette, senza forzare."
     ],
     [
       "Allinea la prima metà",
-      "Appoggia la sagoma 01 sulla matrice 03, con il bordo allineato al suo profilo. La linguetta deve restare nel canale dedicato, fuori dalla zona bombata. Se ci sono due impronte, scegli quella con lo stesso contorno: fronte e retro sono speculari. Lo stampo corretto lascia gioco laterale e ha due inviti sul bordo per sollevare il pezzo: non deve incastrarsi già a freddo."
+      "Appoggia la sagoma 01 sulla matrice 03, con il bordo allineato al suo profilo. Le linguette superiore e inferiore devono restare nei canali dedicati, fuori dalla zona bombata. Se ci sono due impronte, scegli quella con lo stesso contorno: fronte e retro sono speculari. Lo stampo corretto lascia gioco laterale e ha due inviti sul bordo per sollevare il pezzo: non deve incastrarsi già a freddo."
     ],
     [
       "Scalda gradualmente",
-      "Per una prima prova usa una piccola sagoma a rete in PLA e stampi più resistenti al calore, per esempio PETG. Muovi l'asciugacapelli sulla rete fino a renderla modellabile, senza deformare bordo, linguetta o stampi. Tempi e distanza dipendono dal materiale e dall'apparecchio: non c'è un valore universale."
+      "Per una prima prova usa una piccola sagoma a rete in PLA e stampi più resistenti al calore, per esempio PETG. Muovi l'asciugacapelli sulla rete fino a renderla modellabile, senza deformare bordo, linguette o stampi. Tempi e distanza dipendono dal materiale e dall'apparecchio: non c'è un valore universale."
     ],
     [
       "Forma e lascia raffreddare",
@@ -60,10 +65,14 @@
     [
       "Chiudi le due metà",
       "Accosta i bordi con le bombature verso l'esterno. Inserisci le due linguette nelle feritoie del raccordo 05 e allinea i loro fori con il passaggio trasversale del raccordo. Fai scorrere il perno 07 attraverso raccordo e fori di entrambe le linguette, fino a centrarlo. Solo dopo avvita il tappo 06 a mano: il tappo deve impedire al perno di uscire lateralmente. Tira delicatamente le metà per verificare la tenuta. Per aprire, svita il tappo, sfila il perno e libera le linguette. Non serve colla."
+    ],
+    [
+      "Blocca anche il fondo",
+      "Accosta le due zone rinforzate inferiori, con i fori allineati. Fai scorrere la clip 08 dal basso verso il corpo: i due denti devono entrare nei fori. Le zone rinforzate devono arrivare fino al dorso della clip. Prova tirando delicatamente le metà: il fondo deve restare chiuso. Per aprire, allarga delicatamente i due bracci e sfila la clip prima di separare le metà. Non scaldare la clip."
     ]
   ],
   "notes": [
-    "Revisione dopo la prima prova fisica: rilascio dello stampo e tenuta del nuovo perno devono essere confermati con un altro campione piccolo. Non appendere né caricare il pezzo prima di questa verifica.",
+    "Il perno superiore è stato provato dall’utente. La nuova clip inferiore richiede una prova a freddo con le linguette prima della formatura: la flessibilità dipende da materiale e stampa. Non forzare uno scatto troppo duro.",
     "La modalità Piena si stira meno facilmente della rete: richiede un collaudo specifico e non è equivalente alla trama aperta.",
     "Con SVG o STL asimmetrici possono comparire due impronte speculari sullo stesso stampo. Un cuore ha la chiusura sul lobo, non nella V centrale.",
     "L'anteprima formata è indicativa, non simula lo stiramento del materiale. Gli STL importati forniscono il profilo XY, non la superficie originale.",

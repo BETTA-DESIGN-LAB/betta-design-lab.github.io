@@ -50,13 +50,17 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  const rings=outline.toPolygons(),bb=outline.bounds();
  // Sul cuore la chiusura va sul lobo: il raccordo centrale riempirebbe la V.
  let neckY=bb.max[1];for(let y=bb.max[1];y>bb.min[1];y-=.5)if(t(rect(12,1,neckX,y-.5).subtract(outline)).area()<.001){neckY=y;break;}
- const tab=rect(10,10,neckX,neckY+3);let fill=outline;
+ // Una seconda coppia di linguette chiude il lato opposto al tappo.
+ const bottomX=0;let bottomY=bb.min[1];
+ for(let y=bb.min[1];y<bb.max[1];y+=.5)if(t(rect(12,1,bottomX,y+.5).subtract(outline)).area()<.001){bottomY=y;break;}
+ const tab=rect(10,10,neckX,neckY+3);
+ const foot=t(rect(7,8,bottomX,bottomY+4).intersect(outline));let fill=outline;
  if(p.pattern!=='solid'){
   const bars:CrossSection[]=[];for(let x=-240;x<=240;x+=p.spacing)bars.push(rect(p.strand,500,x,0),rect(500,p.strand,0,x));
   let lattice=t(C.union(bars));if(p.pattern==='diagonal')lattice=t(lattice.rotate(45));
   fill=t(t(outline.subtract(inner)).add(t(lattice.intersect(inner))));
  }
- fill=t(t(fill.add(tab)).subtract(rect(4,2,neckX,neckY+5)));
+ fill=t(t(t(t(fill.add(tab)).add(foot)).subtract(t(rect(4,2,neckX,neckY+5).add(rect(3.4,1.6,bottomX,bottomY+3.8))))).subtract(rect(6.6,5,bottomX,bottomY-1.3)));
  // Il ritaglio diagonale può lasciare minuscoli segmenti negli angoli delle
  // aperture: conserva la rete collegata al bordo, senza frammenti da stampare.
  const network=fill.decompose().map(t).filter(c=>c.area()>1e-6).sort((a,b)=>b.area()-a.area());
@@ -80,7 +84,9 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  put('back','02 · Sagoma piatta retro',p.color,t(t(fill.scale([-1,1])).extrude(p.sheet)));
  let maxDistance=1;for(let x=bb.min[0];x<=bb.max[0];x+=p.width/18)for(let y=bb.min[1];y<=bb.max[1];y+=p.height/18)if(t(circle(.01,x,y).intersect(outline)).area()>0)maxDistance=Math.max(maxDistance,edgeDistance(x,y,rings));
  const dome=(x:number,y:number)=>{
-  const base=p.dome*Math.sin(Math.min(1,edgeDistance(x,y,rings)/maxDistance)*Math.PI/2);
+  // Piccola sede piana interna al bordo per la clip, senza linguette sporgenti.
+  const footBlend=Math.min(1,Math.max(Math.abs(x-bottomX)-3.5,y-bottomY-7,0)/2);
+  const base=footBlend*p.dome*Math.sin(Math.min(1,edgeDistance(x,y,rings)/maxDistance)*Math.PI/2);
   if(p.shape!=='pumpkin')return base;
   // Volume ellissoidale con cinque spicchi verticali: i solchi sono geometria
   // reale, condivisa da matrice, convesso e anteprima delle metà formate.
@@ -122,7 +128,7 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  printableMale=t(printableMale.scale([-1,1,1]));
  put('female','03 · Stampo concavo',p.moldColor,female);put('male','04 · Stampo convesso',p.moldColor,printableMale);
  for(const [index,section]of [front,fill].entries()){
-  const solid=t(dense(section).warp(v=>{v[2]=(v[1]>neckY?0:dome(v[0],v[1]))+v[2]*p.sheet;}));
+  const solid=t(dense(section).warp(v=>{v[2]=(v[1]>neckY||v[1]<bottomY?0:dome(v[0],v[1]))+v[2]*p.sheet;}));
   const mesh=toMeshData(solid);if(index===1){for(let i=2;i<mesh.positions.length;i+=3)mesh.positions[i]=-mesh.positions[i];for(let i=0;i<mesh.indices.length;i+=3)[mesh.indices[i+1],mesh.indices[i+2]]=[mesh.indices[i+2],mesh.indices[i+1]];}
   formed.push({id:index?'formed-back':'formed-front',name:index?'Retro formato':'Fronte formato',color:p.color,mesh});
  }
@@ -150,6 +156,19 @@ export function build(M:ManifoldToplevel,input:Params,artwork?:SvgArtwork):Resul
  put('lock','07 · Perno di blocco',p.moldColor,pin);
  const seatedPin=t(pin.translate([0,0,pinZ-pinHeight/2]));
  for(const [id,solid]of [['formed-connector',connector],['formed-cap',cap],['formed-lock',seatedPin]] as const)formed.push({id,name:id==='formed-cap'?'Tappo con occhiello':id==='formed-lock'?'Perno di blocco':'Raccordo',color:p.moldColor,mesh:toMeshData(t(t(solid.rotate([-90,0,0])).translate([neckX,neckY+2,0])))});
+ // Clip a U con due denti arrotondati nei fori delle linguette inferiori.
+ const jaw=p.sheet+p.clearance,wall=1;
+ const box=(w:number,d:number,h:number,x:number,y:number,z:number)=>t(t(M.Manifold.cube([w,d,h],true)).translate([x,y,z]));
+ let bottomClip=t(box(5.8,5.4,wall,0,3.9,jaw+wall/2).add(box(5.8,5.4,wall,0,3.9,-jaw-wall/2)));
+ bottomClip=t(bottomClip.add(box(5.8,1.2,2*(jaw+wall),0,.6,0)));
+ for(const sign of [-1,1]){
+  const tooth=t(t(t(M.Manifold.cylinder(2.6,.65,.65,32)).rotate([0,90,0])).translate([-1.3,3.8,sign*(p.sheet+.35)]));
+  bottomClip=t(bottomClip.add(tooth));
+ }
+ const upright=t(bottomClip.rotate([90,0,0]));
+ put('bottom-clip','08 · Clip inferiore',p.color,t(upright.translate([0,0,-upright.boundingBox().min[2]])));
+ formed.push({id:'formed-bottom-clip',name:'Clip inferiore',color:p.color,mesh:toMeshData(t(bottomClip.translate([bottomX,bottomY,0])))});
+ warnings.push('Chiudi anche le linguette inferiori con la clip 08. Prova lo scatto a freddo prima della formatura.');
  return {parts,formed,warnings};
  }finally{s.free();}
 }
