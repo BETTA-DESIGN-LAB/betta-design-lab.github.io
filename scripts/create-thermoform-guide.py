@@ -33,7 +33,7 @@ def header(page,title,sub):
  C.drawImage(LOGO,40,772,width=130,height=65,preserveAspectRatio=True)
  text(40,751,title,size=27,bold=True);text(40,706,sub,size=11)
  C.setStrokeColor(GRAY);C.line(40,50,555,50);text(40,38,'BETTA DESIGN LAB · Thermoform · 04.11.2026',size=8)
- text(515,38,f'{page} / 7',w=45,size=8)
+ text(515,38,f'{page} / 6',w=45,size=8)
 def box(x,y,w,h):
  C.setFillColor(HexColor('#f5f6f6'));C.roundRect(x,y,w,h,12,fill=1,stroke=0)
 def arrow(x,y1,y2):
@@ -43,102 +43,82 @@ def img(name,x,y,w,h):
  path=IMAGES/(name+'.png')
  if not path.exists():raise FileNotFoundError('Esegui prima export-thermoform-guide.ts e render-thermoform-guide.py')
  C.drawImage(str(path),x,y,width=w,height=h,preserveAspectRatio=True,anchor='c',mask='auto')
-def sheet(cx,cy,scale=1,index=0):
- img('part-front' if index==0 else 'part-back',cx-75,cy-48,150,80)
-def concave(cx,cy):img('part-female',cx-85,cy-50,170,80)
-def convex(cx,cy):img('part-male',cx-85,cy-50,170,80)
-def connector(cx,cy):img('part-connector',cx-70,cy-52,140,80)
-def cap(cx,cy):img('cap-under',cx-70,cy-50,140,80)
 
-header(1,'Il tuo kit, pezzo per pezzo','Due sagome piatte, due stampi e quattro componenti per la chiusura.')
-for i,(n,title,desc) in enumerate(DATA['parts'][:6]):
+header(1,'Il kit con filetto integrato','Sei pezzi: due reti con mezzo collo, due stampi, tappo e piccola clip.')
+for i,(n,title,desc) in enumerate(DATA['parts']):
  x=40+(i%2)*263;y=474-(i//2)*184;box(x,y,250,174)
  text(x+14,y+161,f'{n} · {title}',w=222,size=12,bold=True)
- if i<2:sheet(x+125,y+90,.85,i)
- elif i==2:concave(x+125,y+90)
- elif i==3:convex(x+125,y+90)
- elif i==4:connector(x+125,y+90)
- else:cap(x+125,y+90)
+ names=['part-front','part-back','part-female','part-male','cap-under','part-bottom-clip']
+ img(names[i],x+35,y+48,180,85)
  text(x+14,y+38,desc,w=222,size=9)
-text(40,80,'07 · Perno: pagina 4. 08 · Clip inferiore: pagina 6. Render dei pezzi reali; non in scala.',size=9)
+text(40,80,'Render dei pezzi reali, non in scala. Nessun raccordo o perno separato.',size=9)
 C.showPage()
 
-header(2,'Dalla rete alla bombatura','Lavora su una metà alla volta. Gli stampi servono come coppia, non si uniscono al contenitore.')
-box(40,386,515,265)
-img('exploded',45,391,270,255)
+header(2,'Prepara e scalda la rete','Forma una metà alla volta. Il collo filettato deve rimanere freddo.')
+box(40,386,515,265);img('exploded',45,391,270,255)
 text(328,621,'04 · Convesso capovolto',w=215,size=12,bold=True)
-text(328,596,'La bombatura guarda in basso, verso il concavo.',w=210,size=10.5)
-text(328,535,'01 o 02 · Sagoma',w=215,size=12,bold=True)
-text(328,510,'Bordo allineato. La linguetta resta nel canale.',w=210,size=10.5)
+text(328,595,'La bombatura guarda verso il basso.',w=210,size=10.5)
+text(328,535,'01 o 02 · Rete capovolta',w=215,size=12,bold=True)
+text(328,510,'Lato liscio in alto, mezzo collo rivolto in basso nel suo invito.',w=210,size=10.5)
 text(328,449,'03 · Stampo concavo',w=215,size=12,bold=True)
-text(328,424,'Qui appoggi la sagoma piatta prima di scaldarla.',w=210,size=10.5)
-y=368
+text(328,424,'Controlla che il profilo coincida prima di scaldare.',w=210,size=10.5)
+y=369
 for i,(title,desc) in enumerate(DATA['steps'][:3]):
  y=text(40,y,f'{i+1}. {title}',size=12,bold=True)-5
- y=text(40,y,desc,size=9.7)-12
+ y=text(40,y,desc,size=10)-12
 C.showPage()
 
-header(3,'Premi, raffredda, ripeti','La forma si stabilizza negli stampi. Estrai la metà soltanto dopo il raffreddamento.')
-box(40,436,515,215)
-img('pressed',45,449,280,181)
+header(3,'Forma e lascia raffreddare','Il convesso preme sulla rete; l’invito aperto protegge il mezzo collo.')
+box(40,436,515,215);img('pressed',45,449,280,181)
 text(337,624,'Vista in sezione',w=205,size=12,bold=True)
-text(337,592,'La rete arancione si trova fra concavo e convesso blu.',w=200,size=11)
-text(337,526,'Premi e lascia raffreddare prima di estrarre.',w=200,size=11,bold=True)
-text(337,474,'Gli stampi reali sono interi: qui sono tagliati solo per vedere dentro.',w=200,size=9)
+text(337,593,'La rete arancione segue la bombatura fra i due stampi blu.',w=200,size=11)
+text(337,523,'Il collo non deve essere schiacciato o scaldato.',w=200,size=11,bold=True)
+text(337,470,'Sezione illustrativa: gli stampi reali sono interi.',w=200,size=9)
 y=412
 for i,(title,desc) in enumerate(DATA['steps'][3:5],start=4):
  y=text(40,y,f'{i}. {title}',size=13,bold=True)-7
  y=text(40,y,desc,size=11)-20
-y=text(40,y,'Le impronte speculari',size=13,bold=True)-7
+y=text(40,y,'Impronte speculari',size=13,bold=True)-7
 y=text(40,y,DATA['notes'][2],size=11)-18
 y=text(40,y,'Rete o superficie piena?',size=13,bold=True)-7
-y=text(40,y,DATA['notes'][1],size=11)
+text(40,y,DATA['notes'][1],size=11)
 C.showPage()
 
-header(4,'La chiusura, senza colla','Prima prova a freddo; avvita a mano e verifica che entrambe le linguette siano trattenute.')
-box(40,413,515,238)
-text(53,639,'1 · Allinea e inserisci',w=236,size=12,bold=True)
-text(315,639,'2 · Centra il perno',w=226,size=12,bold=True)
-img('pin-out',45,432,248,185)
-img('pin-in',302,432,248,185)
-text(45,425,'Raccordo in sezione: arancione = fronte, giallo = retro, verde = perno.',w=505,size=8.5)
-y=text(40,394,'6. '+DATA['steps'][5][0],size=13,bold=True)-6
-y=text(40,y,DATA['steps'][5][1],size=10.5)-15
-y=text(40,y,'Per recuperare il kit già stampato',size=13,bold=True)-6
-y=text(40,y,'Per avere il blocco inferiore servono le nuove sagome 01 e 02, i nuovi stampi 03 e 04 e la clip 08. Le vecchie sagome non hanno le linguette inferiori. A parità di impostazioni, raccordo 05, tappo 06 e perno 07 della revisione precedente restano compatibili.',size=10.5)
+header(4,'Due metà, un solo filetto','Accosta i lati piatti: i giri del filetto devono proseguire da una metà all’altra.')
+box(40,416,515,235)
+text(53,638,'1 · Mezzi colli separati',w=230,size=12,bold=True)
+text(315,638,'2 · Collo completo',w=230,size=12,bold=True)
+img('neck-separated',45,442,248,178);img('neck-joined',302,442,248,178)
+text(50,432,'Arancione = fronte · giallo = retro. Sono parti delle reti, non raccordi separati.',size=8.5)
+y=text(40,398,'6. '+DATA['steps'][5][0],size=13,bold=True)-6
+text(40,y,DATA['steps'][5][1],size=10.5)
+box(40,72,252,192);box(303,72,252,192)
+text(53,252,'3 · Appoggia il tappo',w=220,size=12,bold=True)
+text(316,252,'4 · Avvita a mano',w=220,size=12,bold=True)
+img('cap-down',48,82,236,147);img('closed',311,82,236,147)
 C.showPage()
-header(5,'Avvita solo dopo il perno','Il tappo impedisce al perno di uscire lateralmente. Non serve colla.')
-box(40,368,252,283);box(303,368,252,283)
-text(53,638,'3 · Fai scendere il tappo',w=226,size=12,bold=True)
-text(316,638,'4 · Chiudi a mano',w=226,size=12,bold=True)
-img('cap-down',48,401,236,218);img('closed',311,401,236,218)
-text(53,393,'Il perno è già inserito e centrato.',w=225,size=10)
-text(316,393,'Non forzare la filettatura.',w=225,size=10)
-box(40,88,515,258)
-img('whole',48,99,245,237)
-text(315,326,'Controllo finale',w=226,size=14,bold=True)
-text(315,289,'Tira delicatamente le due metà: devono restare unite. Se una si sfila, controlla che il perno attraversi entrambi i fori.',w=222,size=11)
-text(315,207,'Per aprire: sfila prima la clip inferiore, poi svita il tappo e rimuovi il perno.',w=222,size=11)
-text(315,126,'Prima conferma la tenuta con una prova fisica.',w=222,size=10,bold=True)
+
+header(5,'Piccolo fermo sul fondo','La clip 06 a U trattiene le due sedi nel bordo inferiore.')
+box(40,412,515,239)
+text(53,638,'1 · Fai scorrere la clip',w=230,size=12,bold=True)
+text(315,638,'2 · Controlla lo scatto',w=230,size=12,bold=True)
+img('bottom-open',45,441,248,179);img('bottom-closed',302,441,248,179)
+text(50,432,'Sedi piatte: arancione = fronte · giallo = retro · verde = clip.',size=9)
+y=text(40,395,'7. '+DATA['steps'][6][0],size=13,bold=True)-7
+text(40,y,DATA['steps'][6][1],size=10.5)
+box(40,73,515,205);img('whole',48,83,250,185)
+text(315,260,'Prima di ristampare tutto',w=220,size=13,bold=True)
+text(315,226,'Prova il campione a freddo: due mezzi colli con tappo, poi due sedi con clip.',w=220,size=10.5)
+text(315,151,'Per aprire: sfila la clip e svita il tappo. Non serve colla.',w=220,size=10.5)
 C.showPage()
-header(6,'Blocca anche il fondo','La piccola clip 08 entra nella sede del bordo: non è il perno superiore.')
-box(40,405,515,246)
-text(53,638,'1 · Inserisci dal basso',w=230,size=12,bold=True)
-text(315,638,'2 · Verifica lo scatto',w=230,size=12,bold=True)
-img('bottom-open',45,433,248,180);img('bottom-closed',302,433,248,180)
-text(50,424,'Sedi piatte: arancione = fronte · giallo = retro · verde = clip',size=9)
-y=text(40,384,'7. '+DATA['steps'][6][0],size=14,bold=True)-10
-y=text(40,y,DATA['steps'][6][1],size=11)-24
-y=text(40,y,'Prima prova a freddo',size=14,bold=True)-8
-text(40,y,'Accosta le linguette ancora piatte e prova la clip prima di scaldare la rete. Se lo scatto è duro, non forzare: aumenta il gioco nel generatore e ristampa un campione. La clip resta separata durante la formatura.',size=11)
-C.showPage()
-header(7,'Prima di usare il kit','Revisione dopo la prima prova: verifica rilascio e chiusura con un campione piccolo.')
-y=text(40,651,'Controlli prima della formatura',size=15,bold=True)-12
+
+header(6,'Prima di usare il nuovo kit','La revisione con mezzi filetti richiede nuove sagome, nuovi stampi e nuovo tappo.')
+y=text(40,651,'Compatibilità con le stampe precedenti',size=14,bold=True)-8
+y=text(40,y,'Questa chiusura sostituisce il raccordo separato e il suo perno: non si monta sulle vecchie sagome. Usa tutti i sei pezzi della stessa configurazione. Non mescolare tappo, stampi o clip delle revisioni precedenti.',size=11)-22
 for note in DATA['notes']:
- y=text(40,y,'• '+note,size=11)-16
-y=text(40,y-1,'Fonti del procedimento · consultate il 3 novembre 2026 · revisione 4 novembre',size=9,bold=True)-4
+ y=text(40,y,'• '+note,size=10.5)-14
+y=text(40,y,'Riferimenti del procedimento · geometrie Betta Design Lab originali',size=9,bold=True)-6
 for name,url in DATA['sources']:
- y=text(40,y,f'<link href="{url}" color="#b43310">{name}</link>',size=8.5)-3
-
+ y=text(40,y,f'<link href="{url}" color="#b43310">{name}</link>',size=8.5)-4
 C.save()
 print(OUT)
