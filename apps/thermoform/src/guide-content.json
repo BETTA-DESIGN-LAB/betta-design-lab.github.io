@@ -2,90 +2,80 @@
   "parts": [
     [
       "01",
-      "Sagoma piatta fronte",
-      "La prima metà da scaldare e formare. Può contenere il viso."
+      "Fronte con mezzo filetto",
+      "La rete è piatta; il mezzo collo filettato è già unito al bordo."
     ],
     [
       "02",
-      "Sagoma piatta retro",
-      "La seconda metà, speculare al fronte."
+      "Retro con mezzo filetto",
+      "La seconda metà porta il filetto complementare al fronte."
     ],
     [
       "03",
       "Stampo concavo",
-      "La matrice che riceve la sagoma e il convesso."
+      "Riceve la rete, con un invito aperto per proteggere il mezzo collo."
     ],
     [
       "04",
       "Stampo convesso",
-      "Il pezzo bombato che preme la sagoma nella matrice."
+      "Forma la bombatura senza premere sul mezzo filetto."
     ],
     [
       "05",
-      "Raccordo filettato",
-      "Accoglie le linguette e il perno trasversale che le blocca."
+      "Tappo con occhiello",
+      "Si avvita direttamente sulle due mezze filettature accostate."
     ],
     [
       "06",
-      "Tappo con occhiello",
-      "Si avvita sul raccordo e impedisce al perno di uscire. L'occhiello serve per appendere."
-    ],
-    [
-      "07",
-      "Perno di blocco",
-      "Attraversa raccordo e fori delle due linguette. Va inserito prima di avvitare il tappo."
-    ],
-    [
-      "08",
-      "Clip inferiore",
-      "Piccola clip a U nella sede del bordo inferiore: i denti entrano nei fori delle due zone rinforzate."
+      "Piccola clip inferiore",
+      "Fermo a U per tenere uniti i due bordi sul fondo."
     ]
   ],
   "steps": [
     [
-      "Prepara e prova i pezzi",
-      "Stampa le sagome 01 e 02 piatte. La rete è già nella geometria: non eliminare gli strati superiori e inferiori nello slicer. Stampa separatamente stampi 03 e 04, raccordo 05, tappo 06 perno 07 e clip 08. A freddo prova filettatura e linguette, senza forzare."
+      "Stampa e prova il kit",
+      "Stampa i sei pezzi nell’orientamento fornito: le reti 01 e 02 appoggiano piatte, con il mezzo filetto verso l’alto. La trama è già geometria: conserva gli strati pieni nello slicer. Prima del calore, accosta le due metà e prova tappo 05 e clip 06 senza forzare."
     ],
     [
-      "Allinea la prima metà",
-      "Appoggia la sagoma 01 sulla matrice 03, con il bordo allineato al suo profilo. Le linguette superiore e inferiore devono restare nei canali dedicati, fuori dalla zona bombata. Se ci sono due impronte, scegli quella con lo stesso contorno: fronte e retro sono speculari. Lo stampo corretto lascia gioco laterale e ha due inviti sul bordo per sollevare il pezzo: non deve incastrarsi già a freddo."
+      "Posiziona la prima rete",
+      "Capovolgi la sagoma: il lato liscio che era sul piatto guarda verso l’alto, il mezzo filetto bombato entra rivolto in basso nell’invito aperto della matrice 03. Allinea il contorno. Con due impronte speculari scegli quella che coincide con la sagoma capovolta; non forzare la rete nell’impronta sbagliata."
     ],
     [
-      "Scalda gradualmente",
-      "Per una prima prova usa una piccola sagoma a rete in PLA e stampi più resistenti al calore, per esempio PETG. Muovi l'asciugacapelli sulla rete fino a renderla modellabile, senza deformare bordo, linguette o stampi. Tempi e distanza dipendono dal materiale e dall'apparecchio: non c'è un valore universale."
+      "Scalda solo la rete",
+      "Usa la rete in PLA per la prima prova, con stampi più resistenti al calore, per esempio PETG. Muovi l’asciugacapelli fino a rendere modellabile la rete. Tieni freddi il collo filettato e il bordo: se si deformano, il tappo non avviterà bene. Tempi e distanza dipendono da materiale e apparecchio."
     ],
     [
-      "Forma e lascia raffreddare",
-      "Capovolgi il convesso 04 con la bombatura rivolta verso la matrice. Controlla l'allineamento e premi progressivamente senza forzare. Mantieni i pezzi in posizione fino al raffreddamento; poi separa gli stampi ed estrai la metà. Non tirare la rete ancora calda."
+      "Premi e lascia raffreddare",
+      "Capovolgi il convesso 04: la bombatura guarda verso la matrice. Controlla che l’apertura sul collo sia allineata. Premi gradualmente, mantieni la posizione fino al raffreddamento, poi separa gli stampi e solleva la metà dagli inviti laterali. Non tirare la rete calda."
     ],
     [
-      "Ripeti per il retro",
-      "Lascia raffreddare gli stampi e ripeti con la sagoma 02 nell'impronta corrispondente. Non scaldare le due sagome insieme. Se la rete si lacera, il bordo si deforma o la linguetta perde forma, ristampa la metà anziché forzare il montaggio."
+      "Forma anche il retro",
+      "Lascia raffreddare gli stampi. Ripeti con la sagoma 02, nella sua impronta. Non scaldare le due sagome insieme. Se la rete si lacera o il collo si deforma, ristampa la metà; non cercare di correggere il filetto a caldo."
     ],
     [
-      "Chiudi le due metà",
-      "Accosta i bordi con le bombature verso l'esterno. Inserisci le due linguette nelle feritoie del raccordo 05 e allinea i loro fori con il passaggio trasversale del raccordo. Fai scorrere il perno 07 attraverso raccordo e fori di entrambe le linguette, fino a centrarlo. Solo dopo avvita il tappo 06 a mano: il tappo deve impedire al perno di uscire lateralmente. Tira delicatamente le metà per verificare la tenuta. Per aprire, svita il tappo, sfila il perno e libera le linguette. Non serve colla."
+      "Accosta e avvita",
+      "Accosta fronte e retro con le bombature verso l’esterno e i lati piatti a contatto. Le due mezze filettature devono formare un solo collo cilindrico, con i giri allineati. Avvita il tappo 05 a mano: trattiene direttamente entrambe le metà. Se punta o forza, svita e riallinea; non usare attrezzi. Non servono raccordo separato, perno o colla."
     ],
     [
-      "Blocca anche il fondo",
-      "Accosta le due zone rinforzate inferiori, con i fori allineati. Fai scorrere la clip 08 dal basso verso il corpo: i due denti devono entrare nei fori. Le zone rinforzate devono arrivare fino al dorso della clip. Prova tirando delicatamente le metà: il fondo deve restare chiuso. Per aprire, allarga delicatamente i due bracci e sfila la clip prima di separare le metà. Non scaldare la clip."
+      "Blocca il fondo",
+      "Allinea le piccole sedi nel bordo inferiore e fai scorrere la clip 06 dal basso verso il corpo fino allo scatto. I denti devono entrare nei due fori. Tira delicatamente le metà e controlla che il fondo rimanga chiuso. Per aprire, allarga delicatamente i bracci della clip, sfilala e svita il tappo. Non scaldare la clip."
     ]
   ],
   "notes": [
-    "Il perno superiore è stato provato dall’utente. La nuova clip inferiore richiede una prova a freddo con le linguette prima della formatura: la flessibilità dipende da materiale e stampa. Non forzare uno scatto troppo duro.",
+    "Questa revisione usa mezzi filetti integrati e una clip più sottile: richiede una prova fisica a freddo, prima di formare le reti. I test software verificano geometrie e interferenze, non la forza reale dello scatto.",
     "La modalità Piena si stira meno facilmente della rete: richiede un collaudo specifico e non è equivalente alla trama aperta.",
-    "Con SVG o STL asimmetrici possono comparire due impronte speculari sullo stesso stampo. Un cuore ha la chiusura sul lobo, non nella V centrale.",
-    "L'anteprima formata è indicativa, non simula lo stiramento del materiale. Gli STL importati forniscono il profilo XY, non la superficie originale.",
-    "Proteggi le mani, lavora in un ambiente ventilato e segui le istruzioni dell'asciugacapelli. Niente fiamme. Non usare il kit come contenitore certificato per alimenti o come giocattolo."
+    "Con SVG o STL asimmetrici gli stampi hanno due impronte speculari. Il collo del cuore rimane sul lobo e lascia libera la V centrale.",
+    "L’anteprima formata è indicativa: non simula lo stiramento del materiale. Gli STL importati forniscono il profilo XY, non la superficie originale.",
+    "Proteggi le mani, lavora in ambiente ventilato e segui le istruzioni dell’asciugacapelli. Niente fiamme. Il kit non è un contenitore certificato per alimenti né un giocattolo."
   ],
   "sources": [
     [
-      "MeshMolded - guida alla termoformatura",
-      "https://meshmolded.com/thermoforming"
+      "GoldenPants - Thermoformed Kawaii Christmas Tree",
+      "https://makerworld.com/it/models/3483612-thermoformed-kawaii-christmas-tree"
     ],
     [
-      "3D Printing Origin - Thermoforming Snowman",
-      "https://www.patreon.com/3DPrintingOrigin/posts/3d-printable-170996458"
+      "MeshMolded - guida alla termoformatura",
+      "https://meshmolded.com/thermoforming"
     ]
   ]
 }
