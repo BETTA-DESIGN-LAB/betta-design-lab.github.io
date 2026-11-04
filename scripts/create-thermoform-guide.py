@@ -121,12 +121,12 @@ text(315,289,'Tira delicatamente le due metà: devono restare unite. Se una si s
 text(315,207,'Per aprire: sfila prima la clip inferiore, poi svita il tappo e rimuovi il perno.',w=222,size=11)
 text(315,126,'Prima conferma la tenuta con una prova fisica.',w=222,size=10,bold=True)
 C.showPage()
-header(6,'Blocca anche il fondo','La clip 08 tiene unite le linguette inferiori: non è il perno superiore.')
+header(6,'Blocca anche il fondo','La piccola clip 08 entra nella sede del bordo: non è il perno superiore.')
 box(40,405,515,246)
 text(53,638,'1 · Inserisci dal basso',w=230,size=12,bold=True)
 text(315,638,'2 · Verifica lo scatto',w=230,size=12,bold=True)
 img('bottom-open',45,433,248,180);img('bottom-closed',302,433,248,180)
-text(50,424,'Arancione = fronte · giallo = retro · verde = clip inferiore',size=9)
+text(50,424,'Sedi piatte: arancione = fronte · giallo = retro · verde = clip',size=9)
 y=text(40,384,'7. '+DATA['steps'][6][0],size=14,bold=True)-10
 y=text(40,y,DATA['steps'][6][1],size=11)-24
 y=text(40,y,'Prima prova a freddo',size=14,bold=True)-8

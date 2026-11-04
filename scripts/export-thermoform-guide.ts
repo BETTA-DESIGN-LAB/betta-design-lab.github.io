@@ -38,11 +38,11 @@ try{
  const film=t(t(formed.scale([1,1,-1])).translate([0,0,sheetZ+p.sheet]));
  scene('pressed',[actor('female',section(a.female)),actor('front',section(film)),actor('male',section(t(inverted.translate([0,0,closedZ]))))],[-1.8,-.8,.7]);
  scene('release',[actor('female',a.female),actor('front',t(film.translate([0,0,22])))],[-1,-1.6,1.2],[[[0,0,20],[0,0,32]]]);
- const bottomY=Math.min(...Array.from(r.parts[0].mesh.positions).filter((_,i)=>i%3===1))+8;
- const lowerBox=t(t(M.Manifold.cube([18,14,20],true)).translate([0,bottomY-4,0]));
- const lowerFront=t(solid(r.formed[0]).intersect(lowerBox)),lowerBack=t(solid(r.formed[1]).intersect(lowerBox));
+ const bottomY=Math.min(...Array.from(r.formed.find(part=>part.id==='formed-bottom-clip')!.mesh.positions).filter((_,i)=>i%3===1));
+ const lowerBox=t(t(M.Manifold.cube([18,14,20],true)).translate([0,bottomY+3,0]));
+ const lowerFront=t(a.front.intersect(lowerBox)),lowerBack=t(t(a.back.scale([-1,1,-1])).intersect(lowerBox));
  const bottomClip=solid(r.formed.find(part=>part.id==='formed-bottom-clip')!);
- scene('bottom-open',[actor('front',lowerFront),actor('back',lowerBack),actor('bottom-clip',t(bottomClip.translate([0,-15,0])))],[-1,-1.6,1],[[[0,bottomY-16,0],[0,bottomY-8,0]]]);
+ scene('bottom-open',[actor('front',lowerFront),actor('back',lowerBack),actor('bottom-clip',t(bottomClip.translate([0,-10,0])))],[-1,-1.6,1],[[[0,bottomY-10,0],[0,bottomY,0]]]);
  scene('bottom-closed',[actor('front',lowerFront),actor('back',lowerBack),actor('bottom-clip',bottomClip)],[-1,-1.6,1]);
  scene('whole',r.formed.map(part=>actor(part.id.replace('formed-',''),part.mesh)),[-1,-1.6,.9]);
  mkdirSync('tmp/pdfs',{recursive:true});writeFileSync('tmp/pdfs/thermoform-figures.json',JSON.stringify(scenes));
