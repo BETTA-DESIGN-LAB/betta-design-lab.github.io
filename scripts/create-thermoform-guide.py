@@ -28,8 +28,8 @@ def header(page,title,sub):
  C.setFillColor(white);C.rect(0,0,595,842,fill=1,stroke=0)
  C.drawImage(ImageReader(str(ROOT/'public/betta-design-lab-logo.png')),40,772,width=130,height=65,preserveAspectRatio=True,mask='auto')
  text(40,751,title,size=27,bold=True);text(40,706,sub,size=11)
- C.setStrokeColor(GRAY);C.line(40,50,555,50);text(40,38,'BETTA DESIGN LAB · Thermoform · 03.11.2026',size=8)
- text(515,38,f'{page} / 4',w=45,size=8)
+ C.setStrokeColor(GRAY);C.line(40,50,555,50);text(40,38,'BETTA DESIGN LAB · Thermoform · 04.11.2026',size=8)
+ text(515,38,f'{page} / 5',w=45,size=8)
 def box(x,y,w,h):
  C.setFillColor(HexColor('#f5f6f6'));C.roundRect(x,y,w,h,12,fill=1,stroke=0)
 def arrow(x,y1,y2):
@@ -54,8 +54,8 @@ def connector(cx,cy):
 def cap(cx,cy):
  C.setFillColor(GRAY);C.setStrokeColor(INK);C.setLineWidth(2);C.roundRect(cx-27,cy-19,54,38,8,fill=1,stroke=1);C.circle(cx,cy+31,13,fill=1,stroke=1);C.setFillColor(white);C.circle(cx,cy+31,6,fill=1,stroke=1)
 
-header(1,'Il tuo kit, pezzo per pezzo','Due sagome piatte, due stampi e due componenti per la chiusura.')
-for i,(n,title,desc) in enumerate(DATA['parts']):
+header(1,'Il tuo kit, pezzo per pezzo','Due sagome piatte, due stampi e tre componenti per la chiusura.')
+for i,(n,title,desc) in enumerate(DATA['parts'][:6]):
  x=40+(i%2)*263;y=474-(i//2)*184;box(x,y,250,174)
  text(x+14,y+161,f'{n} · {title}',w=222,size=12,bold=True)
  if i<2:sheet(x+125,y+90,.85)
@@ -64,7 +64,7 @@ for i,(n,title,desc) in enumerate(DATA['parts']):
  elif i==4:connector(x+125,y+90)
  else:cap(x+125,y+80)
  text(x+14,y+48,desc,w=222,size=9)
-text(40,80,'Schemi di funzione, non disegni in scala. Forma e dettagli reali dipendono dalla configurazione.',size=9)
+text(40,80,'07 · Perno di blocco: illustrato nel montaggio a pagina 4. Schemi non in scala.',size=9)
 C.showPage()
 
 header(2,'Dalla rete alla bombatura','Lavora su una metà alla volta. Gli stampi servono come coppia, non si uniscono al contenitore.')
@@ -104,20 +104,25 @@ C.showPage()
 header(4,'La chiusura, senza colla','Prima prova a freddo; avvita a mano e verifica che entrambe le linguette siano trattenute.')
 box(40,413,515,238)
 cap(164,578);arrow(164,545,527);connector(164,496)
+C.setFillColor(ORANGE);C.rect(128,492,72,7,fill=1,stroke=0);text(70,512,'07',w=40,size=12,bold=True)
 C.setFillColor(ORANGE);C.setStrokeColor(ORANGE);C.rect(151,435,9,35,fill=1,stroke=0);C.rect(168,435,9,35,fill=1,stroke=0)
 arrow(164,418,433)
 text(280,612,'06 · Tappo con occhiello',w=245,size=12,bold=True)
 text(280,588,'Si avvita sul raccordo, non direttamente sulle sagome.',w=230,size=10)
-text(280,528,'05 · Raccordo filettato',w=245,size=12,bold=True)
-text(280,503,'Le linguette di fronte e retro entrano insieme nelle feritoie.',w=230,size=10)
+text(280,528,'05 + 07 · Raccordo e perno',w=245,size=12,bold=True)
+text(280,503,'Il perno attraversa i fori delle due linguette. Il tappo ne impedisce l’uscita laterale.',w=230,size=10)
 text(280,454,'01 + 02 · Le due metà',w=245,size=12,bold=True)
 text(280,430,'Accosta i bordi; bombature verso l’esterno.',w=230,size=10)
 y=text(40,394,'6. '+DATA['steps'][5][0],size=13,bold=True)-6
 y=text(40,y,DATA['steps'][5][1],size=10.5)-15
-y=text(40,y,'Prima di iniziare',size=13,bold=True)-6
+y=text(40,y,'Per recuperare il kit già stampato',size=13,bold=True)-6
+y=text(40,y,'A parità di configurazione, sagome 01 e 02, convesso 04 e tappo 06 sono invariati. Ristampa il concavo 03, il raccordo 05 e il perno 07. Il vecchio raccordo non ha il passaggio per il perno: va sostituito. Verifica comunque che i fori nelle linguette non siano stati deformati dal calore.',size=10.5)
+C.showPage()
+header(5,'Prima di usare il kit','Revisione dopo la prima prova: verifica rilascio e chiusura con un campione piccolo.')
+y=text(40,651,'Controlli prima della formatura',size=15,bold=True)-12
 for note in DATA['notes']:
- y=text(40,y,'• '+note,size=9.3)-7
-y=text(40,y-1,'Fonti del procedimento · consultate il 3 novembre 2026',size=9,bold=True)-4
+ y=text(40,y,'• '+note,size=11)-16
+y=text(40,y-1,'Fonti del procedimento · consultate il 3 novembre 2026 · revisione 4 novembre',size=9,bold=True)-4
 for name,url in DATA['sources']:
  y=text(40,y,f'<link href="{url}" color="#b43310">{name}</link>',size=8.5)-3
 
