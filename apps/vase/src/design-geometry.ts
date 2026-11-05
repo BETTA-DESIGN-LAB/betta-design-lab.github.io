@@ -62,8 +62,8 @@ function finishHeight(p:VaseParams,a:number,t:number):number{
 export function buildDesignVase(M:ManifoldToplevel,p:VaseParams):{parts:Part[];warnings:string[]}{
  const s=new Scope(),t=<T extends {delete():void}>(v:T)=>s.t(v),warnings:string[]=[];
  try{
- const angular=p.finish==='none'?192:Math.max(192,Math.min(768,p.ribCount*(p.finish==='honeycomb'?16:10)));
- const axial=Math.max(48,Math.min(480,Math.max(Math.ceil(p.height/2),p.finish==='none'?0:p.textureRows*(p.finish==='honeycomb'?12:6),['fins','spiral','lattice'].includes(p.finish)?Math.ceil(p.ribCount*Math.abs(p.helix)/360*6):0)));
+ const angular=p.finish==='none'?192:Math.max(192,Math.min(768,p.ribCount*(p.finish==='honeycomb'?32:10)));
+ const axial=Math.max(48,Math.min(480,Math.max(Math.ceil(p.height/2),p.finish==='none'?0:p.textureRows*(p.finish==='honeycomb'?24:6),['fins','spiral','lattice'].includes(p.finish)?Math.ceil(p.ribCount*Math.abs(p.helix)/360*6):0)));
  const levels=Array.from(new Set([0,p.bottomThickness,...Array.from({length:axial},(_,i)=>(i+1)*p.height/axial),p.height*p.patternStart/100,p.height*p.patternEnd/100].map(z=>Math.round(z*1e5)/1e5))).sort((a,b)=>a-b);
  const minR=Math.min(...levels.map(z=>silhouetteRadius(p,z/p.height)));
  const poly:Vec2[]=Array.from({length:angular},(_,i)=>{const a=TAU*i/angular,r=minR*profileRadius(p,a,minR);return[r*Math.cos(a),r*Math.sin(a)];});
