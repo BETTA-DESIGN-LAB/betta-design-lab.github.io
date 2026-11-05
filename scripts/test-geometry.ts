@@ -1,3 +1,4 @@
+import './test-vase-design.ts';
 import './test-keychain-letter-detail.ts';
 import './test-desk-auto-fit.ts';
 import './test-svg-thickness.ts';
