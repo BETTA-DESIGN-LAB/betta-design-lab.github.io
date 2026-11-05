@@ -1,8 +1,10 @@
+import {buildDesignVase} from './design-geometry.ts';
 import { Scope, toMeshData, type ManifoldToplevel, type Part, type Vec2 } from '@bdl/geometry';
 import { sanitize, type VaseParams } from './params.ts';
 
 export function buildVase(M: ManifoldToplevel, p: VaseParams): { parts: Part[]; warnings: string[] } {
   p = sanitize(p);
+  if(p.silhouette!=='straight'||p.finish!=='none'||!['smooth','faceted','wavy'].includes(p.profile))return buildDesignVase(M,p);
   const s = new Scope();
   const warnings: string[] = [];
   try {

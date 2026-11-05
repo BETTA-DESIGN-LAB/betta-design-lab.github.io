@@ -148,6 +148,7 @@ let uid = 0;
 const nextId = (p: string) => `${p}-${++uid}`;
 
 export interface SliderOptions {
+  editable?: boolean;
   label: string;
   min: number;
   max: number;
@@ -163,24 +164,26 @@ export function slider(o: SliderOptions): SliderRow {
   const id = nextId('s');
   const step = o.step ?? 1;
   const decimals = (String(step).split('.')[1] ?? '').length;
-  const out = el('span', { class: 'bdl-row-value' });
+  const out = o.editable ? el('input', {type:'number',class:'bdl-slider-number',min:o.min,max:o.max,step,value:o.value,'aria-label':o.label+' · valore numerico'}) : el('span', { class: 'bdl-row-value' });
   const input = el('input', { class: 'bdl-range', type: 'range', id, min: o.min, max: o.max, step, value: o.value });
   const paint = () => {
     const v = Number(input.value);
-    out.textContent = `${v.toFixed(decimals)}${o.unit ? ` ${o.unit}` : ''}`;
+    if(o.editable)(out as HTMLInputElement).value=v.toFixed(decimals);
+    else out.textContent = `${v.toFixed(decimals)}${o.unit ? ` ${o.unit}` : ''}`;
     const p = ((v - Number(input.min)) / (Number(input.max) - Number(input.min) || 1)) * 100;
     input.style.setProperty('--p', `${p}%`);
   };
   input.addEventListener('input', () => { paint(); o.onInput(Number(input.value)); });
+  if(o.editable){const commit=()=>{const raw=Number((out as HTMLInputElement).value);if(Number.isFinite(raw)&&((out as HTMLInputElement).value!=='')){input.value=String(Math.max(Number(input.min),Math.min(Number(input.max),raw)));paint();o.onInput(Number(input.value));}else paint();};out.addEventListener('change',commit);out.addEventListener('blur',commit);}
   paint();
   const root = el('div', { class: 'bdl-row' },
-    el('div', { class: 'bdl-row-head' }, el('label', { for: id }, o.label), out),
+    el('div', { class: 'bdl-row-head' }, el('label', { for: id }, o.label+(o.editable&&o.unit?' ('+o.unit+')':'')), out),
     input,
     o.hint ? el('p', { class: 'bdl-hint' }, o.hint) : null);
   return {
     root,
     set(v) { input.value = String(v); paint(); },
-    setRange(min, max) { input.min = String(min); input.max = String(max); paint(); },
+    setRange(min, max) { input.min = String(min); input.max = String(max); if(o.editable){(out as HTMLInputElement).min=String(min);(out as HTMLInputElement).max=String(max);} paint(); },
   };
 }
 

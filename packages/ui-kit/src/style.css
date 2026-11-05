@@ -305,3 +305,6 @@ a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--b
 .bdl-printer-warning{position:absolute;top:85px;left:20px;right:20px;margin:auto;max-width:480px;z-index:4;background:var(--bdl-surface,#fff);color:var(--bdl-text,#111);border:1px solid #ff4b16;border-radius:14px;padding:12px;font-size:13px;pointer-events:none}
 
 .bdl-desk-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+
+.bdl-slider-number{width:92px;min-width:0;text-align:right;padding:6px 8px;border:1px solid var(--bdl-border);border-radius:8px;background:var(--bdl-surface);color:inherit;font:inherit;font-variant-numeric:tabular-nums}.bdl-slider-number:focus-visible{outline:2px solid var(--bdl-accent)}
+.bdl-vase-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.bdl-vase-presets button{display:block;text-align:left;min-height:72px;white-space:normal}.bdl-vase-presets button[aria-pressed='true']{border-color:var(--bdl-accent);background:var(--bdl-accent-soft)}.bdl-vase-presets small{display:block;font-weight:400;opacity:.65;line-height:1.35;margin-top:4px}.bdl-vase-controls select{width:100%}
