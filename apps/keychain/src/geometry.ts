@@ -1,3 +1,4 @@
+import {initialSupports} from './initial-support.ts';
 import {thickenSvg} from '../../shared/svg-thickness.ts';
 import { artworkSection } from '../../shared/artwork-geometry.ts';
 import { Scope,toMeshData,type ManifoldToplevel,type CrossSection,type Manifold,type Part, regularPolygon } from '@bdl/geometry';
@@ -33,9 +34,10 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  }else if(p.model==='initial' && p.shape==='svg') {
  if(!design.initial)throw new Error('Inserisci un’iniziale.');
  // La lettera è il corpo stampabile. Le scritte e i simboli mantengono tutto il loro contorno.
- base=fit(design.initial,p.width,p.depth);
+ const letter=section(design.initial),letterBounds=letter.bounds();
+ base=s.t(s.t(letter.translate([-(letterBounds.min[0]+letterBounds.max[0])/2,-(letterBounds.min[1]+letterBounds.max[1])/2])).scale([p.width/(letterBounds.max[0]-letterBounds.min[0]),p.depth/(letterBounds.max[1]-letterBounds.min[1])]));
  const additions:CrossSection[]=[];
- if(design.main){const name=s.t(s.t(fit(design.main,p.width*.9*p.scale/100,p.depth*.3*p.scale/100).rotate(p.angle)).translate([p.x,p.y]));additions.push(fillHoles(s.t(name.offset(p.border,'Round',2,48))));}
+ if(design.main){const name=s.t(s.t(fit(design.main,Infinity,p.depth*.3*p.scale/100).rotate(p.angle)).translate([p.x,p.y]));additions.push(fillHoles(s.t(name.offset(p.border,'Round',2,48))));}
  if(extra)additions.push(fillHoles(s.t(extra.offset(p.border,'Round',2,48))));
  for(const addition of additions){const islands=addition.decompose().map(a=>s.t(a));for(const island of islands){const combined=s.t(base.add(island));if(combined.decompose().map(a=>s.t(a)).length>1){let aa:[number,number]=[0,0],bb:[number,number]=[0,0],distance=Infinity;for(const a of base.toPolygons().flat())for(const b of island.toPolygons().flat()){const d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d<distance){distance=d;aa=a;bb=b;}}const ends=[aa,bb].map(at=>s.t(s.t(C.circle(1,32)).translate(at)));base=s.t(combined.add(s.t(C.hull(ends))));}else base=combined;}}
  const islands=base.decompose().map(a=>s.t(a));if(islands.length>1)base=s.t(C.hull(islands));
@@ -148,11 +150,13 @@ export function build(M:ManifoldToplevel,input:Params,design:Design={}) {
  else {
  if(hasInitial&&p.shape!=='svg')decorate(design.initial,p.width*.65,p.depth*.72,0,0,'Iniziale',p.mode,p.initialColor);
  const letterBody=hasInitial&&p.shape==='svg';
- decorate(design.main,p.width*(letterBody?.9:1)*p.scale/100,(nameOnly?p.depth-10:letterBody?p.depth*.3:p.depth*.6)*p.scale/100,p.x,p.y,'Decorazione');
+ decorate(design.main,(letterBody?Infinity:p.width)*p.scale/100,(nameOnly?p.depth-10:letterBody?p.depth*.3:p.depth*.6)*p.scale/100,p.x,p.y,'Decorazione');
  }
  if(extra){if(p.model==='qr'&&s.t(extra.intersect(s.t(field.subtract(extraField)))).area()>.01)throw new Error('SVG o icona invade il margine del QR: spostalo fuori dal codice.');decorate(design.extra,p.extraSize,p.extraSize,p.extraX,p.extraY,'Simbolo',p.mode,p.extraColor,false,p.extraAngle);}
  for(const decoration of decorations)for(const [i,item]of decoration.solid.decompose().map(a=>s.t(a)).entries())if(!item.isEmpty()&&item.volume()>1e-5)parts.push({id:`${decoration.id}-${i}`,name:`${decoration.id} ${i+1}`,color:decoration.color,mesh:toMeshData(item)});
 
- parts.unshift({id:'base',name:svgBody&&p.svgOffset===0?'SVG':'Base',color:p.baseColor,mesh:toMeshData(body)});return {parts,warnings};
+ parts.unshift({id:'base',name:svgBody&&p.svgOffset===0?'SVG':'Base',color:p.baseColor,mesh:toMeshData(body)});
+ if(hasInitial&&p.shape==='svg'){const supported=initialSupports(M,s,p,parts,base);return {...supported,warnings};}
+ return {parts,printParts:parts,warnings};
  }finally{s.free();}
 }
