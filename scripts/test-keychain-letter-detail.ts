@@ -22,3 +22,15 @@ for(const n of [128,512]){
  }finally{s.free();}
 }
 console.log('Portachiavi: contorni ad alta definizione, foro della O conservato, solidi ed export verificati.');
+
+// Antialiased boundaries must retain fractional coordinates, not pixel-square steps.
+{
+ const n=256,data=new Uint8ClampedArray(n*n*4);
+ for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+  const coverage=Math.max(0,Math.min(1,n*.36-Math.hypot(x+.5-n/2,y+.5-n/2)+.5)),k=(y*n+x)*4;
+  data[k]=data[k+1]=data[k+2]=Math.round(255*(1-coverage));data[k+3]=255;
+ }
+ const art=traceLetterContours({width:n,height:n,data},'Curva morbida'),ring=art.shapes[0][0];
+ assert.ok(ring.some(([x])=>Math.abs(x*184-Math.round(x*184))>.05),'Contorno interpolato tra pixel');
+ assert.ok(ring.length>20&&ring.length<250,'Curva regolare con dettaglio controllato');
+}
