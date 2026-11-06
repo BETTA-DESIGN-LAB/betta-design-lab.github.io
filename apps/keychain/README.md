@@ -15,3 +15,7 @@ La stabilità e il gioco reale richiedono una prova fisica sul materiale e sulla
 ## Verifica
 
 test-keychain-support.ts controlla quote indipendenti, altezza nome su rapporti di font diversi, quattro combinazioni di basi, solidi, assenza di collisioni della sede, disposizione sui piatti ed export. I file della prova browser Greta confermano 36 mm di altezza nome per corsivo, moderno e classico.
+
+## Finitura dei caratteri
+
+I caratteri vengono campionati a 2048 px e tracciati tramite marching squares con interpolazione dell’antialias. Il bordo non segue più i quadratini dei pixel. I contorni, inclusi i fori, vengono semplificati con tolleranza subpixel e riutilizzati dalla cache. La stessa geometria entra in anteprima, sedi e file STL/3MF.
