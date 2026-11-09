@@ -13,7 +13,7 @@ export function initialSupports(M:ManifoldToplevel,s:Scope,p:Params,input:Part[]
   parts.push({id:'letter-backing',name:'Sagoma di fondo',color:p.backingColor,mesh:toMeshData(t(outline.extrude(p.backingThickness)))});
  }
  if(!p.letterStand)return {parts,printParts:parts};
- const bb=bounds(parts),w=bb.max[0]-bb.min[0]+12,depth=Math.max(p.standDepth,(bb.max[1]-bb.min[1])*.35),h=p.standHeight;
+ const bb=bounds(parts),w=p.standWidth||bb.max[0]-bb.min[0]+12,depth=p.standDepth,h=p.standHeight;
  const seated=h-Math.min(8,h-2),z=seated-bb.min[1],thickness=p.thickness+(p.letterBacking?p.backingThickness:0),center=(bb.min[0]+bb.max[0])/2;
  const footprint=t(t(t(C.square([w-8,depth-8],true)).offset(4,'Round',2,64)).translate([center,0]));
  const blank=t(footprint.extrude(h));
