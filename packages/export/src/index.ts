@@ -55,6 +55,8 @@ export function printSettings(profile: PrintProfile = 'standard'): Record<string
 export interface ThreeMFOptions {
   /** Profilo consigliato per nozzle 0,4 mm; false conserva il processo dello slicer. */
   printProfile?: PrintProfile | false;
+  /** Independent printable objects; parts within a group retain multicolour alignment. */
+  objectGroups?: readonly {name:string;partIds:readonly string[]}[];
   title?: string;
   designer?: string;
   /** Sposta il modello al centro del piatto (mm). Default 128,128 (piatti 256 mm). */
@@ -65,7 +67,11 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   const [cx, cy] = opts.plateCenter ?? printerCenter();
   const live = parts.filter((p) => p.mesh.indices.length > 0);
   const palette = [...new Set(live.map(p => p.color.toUpperCase()))];
-  const colorGroupId = live.length + 3;
+  const used=new Set<string>();
+  const groups=(opts.objectGroups??[]).map(g=>({name:g.name,indices:live.map((p,i)=>({p,i})).filter(({p})=>g.partIds.includes(p.id)&&!used.has(p.id)&&Boolean(used.add(p.id))).map(({i})=>i)})).filter(g=>g.indices.length);
+  const rest=live.map((p,i)=>({p,i})).filter(({p})=>!used.has(p.id)).map(({i})=>i);
+  if(rest.length||!groups.length)groups.push({name:opts.title??'model',indices:rest});
+  const colorGroupId = live.length + 2 + groups.length;
   const materials = `<m:colorgroup id="${colorGroupId}">${palette.map(color => `<m:color color="${color}FF"/>`).join('')}</m:colorgroup>`;
 
   const objects = live
@@ -85,9 +91,9 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
 
   // Un oggetto "assemblato" che raggruppa i pezzi: gli slicer lo caricano come un unico
   // modello multi-parte già posizionato, invece di sparpagliare i pezzi sul piatto.
-  const asmId = live.length + 2;
-  const components = live.map((_, i) => `<component objectid="${i + 2}"/>`).join('');
-  const assembly = `<object id="${asmId}" name="${esc(opts.title ?? 'model')}" type="model"><components>${components}</components></object>`;
+  const assemblies=groups.map((g,i)=>({id:live.length+2+i,...g}));
+  const assembly=assemblies.map(g=>`<object id="${g.id}" name="${esc(g.name)}" type="model"><components>${g.indices.map(i=>`<component objectid="${i+2}"/>`).join('')}</components></object>`).join('');
+  const buildItems=assemblies.map(g=>`<item objectid="${g.id}" transform="1 0 0 0 1 0 0 0 1 ${cx} ${cy} 0"/>`).join('');
 
   const meta = [
     ['Title', opts.title ?? 'bettadesignlab model'],
@@ -102,7 +108,7 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
     .join('');
 
   const model = `<?xml version="1.0" encoding="UTF-8"?>
-<model unit="millimeter" xml:lang="it-IT" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" requiredextensions="m">${meta}<resources>${materials}${objects}${assembly}</resources><build><item objectid="${asmId}" transform="1 0 0 0 1 0 0 0 1 ${cx} ${cy} 0"/></build></model>`;
+<model unit="millimeter" xml:lang="it-IT" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:m="http://schemas.microsoft.com/3dmanufacturing/material/2015/02" requiredextensions="m">${meta}<resources>${materials}${objects}${assembly}</resources><build>${buildItems}</build></model>`;
 
   const contentTypes = `<?xml version="1.0" encoding="UTF-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>`;
@@ -112,10 +118,13 @@ export function to3MF(parts: readonly Part[], opts: ThreeMFOptions = {}): Uint8A
   // Le proprietà colore standard non bastano a Bambu/Orca: ogni volume deve
   // avere un extruder 1-based e la palette va dichiarata nel progetto.
   // Nessun collegamento AMS né preset specifico della stampante del cliente.
-  const partSettings = live.map((p, i) => `<part id="${i + 2}" subtype="normal_part"><metadata key="name" value="${esc(p.name)}"/><metadata key="extruder" value="${palette.indexOf(p.color.toUpperCase()) + 1}"/><metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/></part>`).join('');
+  const partSettings = (indices:number[])=>indices.map(i => {const p=live[i];return `<part id="${i + 2}" subtype="normal_part"><metadata key="name" value="${esc(p.name)}"/><metadata key="extruder" value="${palette.indexOf(p.color.toUpperCase()) + 1}"/><metadata key="matrix" value="1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1"/></part>`}).join('');
   const processSettings = (opts.printProfile === false || (getPrinterChoice() && getPrinterChoice()!.nozzle !== 0.4)) ? '' : Object.entries(printSettings(opts.printProfile))
     .map(([key, value]) => `<metadata key="${key}" value="${esc(value)}"/>`).join('');
-  const modelSettings = `<?xml version="1.0" encoding="UTF-8"?><config><object id="${asmId}"><metadata key="name" value="${esc(opts.title ?? 'model')}"/><metadata key="extruder" value="1"/>${processSettings}${partSettings}</object><plate><metadata key="plater_id" value="1"/><model_instance><metadata key="object_id" value="${asmId}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="1"/></model_instance></plate></config>`;
+  const objectSettings=assemblies.map(g=>`<object id="${g.id}"><metadata key="name" value="${esc(g.name)}"/><metadata key="extruder" value="1"/>${processSettings}${partSettings(g.indices)}</object>`).join('');
+  const instances=assemblies.map((g,i)=>`<model_instance><metadata key="object_id" value="${g.id}"/><metadata key="instance_id" value="0"/><metadata key="identify_id" value="${i+1}"/></model_instance>`).join('');
+  const modelSettings=`<?xml version="1.0" encoding="UTF-8"?><config>${objectSettings}<plate><metadata key="plater_id" value="1"/>${instances}</plate></config>`;
+
   return zipSync({
     'Metadata/model_settings.config': strToU8(modelSettings),
     '[Content_Types].xml': strToU8(contentTypes),
