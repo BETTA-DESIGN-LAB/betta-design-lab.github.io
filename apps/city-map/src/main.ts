@@ -64,7 +64,7 @@ function setPlacement(value:boolean){
   else syncPin();
 }
 function syncPin(){
-  const point=settings.marker?(pins(settings.markerPosition)[0]??area):undefined;
+  const point=settings.marker?(result?result.primaryMarker:pins(settings.markerPosition)[0]??area):undefined;
   picker.setMarker(point);
   if(placingPin)return;
   locatePin.textContent=settings.marker?'Sposta segnaposto':'Posiziona segnaposto';
@@ -423,6 +423,12 @@ worker.onmessage=(e:MessageEvent<{id:number;result?:Result;error?:string}>)=>{
       const c=result.counts;
       coverage.textContent=c.height+' volumi con altezza registrata · '+c.levels+' da numero di piani · '+c.estimate+' stimati'+(c.omitted?' · '+c.omitted+' sotto la soglia di stampa':'')+
         (c.detached?' · '+c.detached+' frammenti isolati esclusi':'');
+      syncPin();
+      if(result.markerAdjusted||result.markerSkipped){
+        const notes=[result.markerAdjusted?'Segnaposto spostato sul terreno libero più vicino.':'',
+          result.markerSkipped?'Alcuni segnaposti non hanno una sede utilizzabile.':''].filter(Boolean);
+        pinHint.textContent=[pinHint.textContent,...notes].filter(Boolean).join(' ');
+      }
       refreshStatus();
     }else shell.setStatus(e.data.error??'Il modello non è disponibile.','warn');
   }

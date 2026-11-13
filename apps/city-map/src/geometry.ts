@@ -20,7 +20,21 @@ export interface Settings extends Partial<typeof modelDefaults> {
   size:number;base:number;relief:number;fallback:number;roads:boolean;water:boolean;green:boolean;
 }
 export interface Result {
-  parts:Part[];solid:Part;markers?:Part;placedMarkers?:Part;tray?:Part;trayPreview?:Part[];trayFloor:number;stand?:Part;mount?:Part;changes:number[];width:number;depth:number;counts:{height:number;levels:number;estimate:number;omitted:number;detached:number}
+  parts:Part[];solid:Part;markers?:Part;placedMarkers?:Part;primaryMarker?:Point;markerAdjusted:number;markerSkipped:number;tray?:Part;trayPreview?:Part[];trayFloor:number;stand?:Part;mount?:Part;changes:number[];width:number;depth:number;counts:{height:number;levels:number;estimate:number;omitted:number;detached:number}
+}
+function nearestGround(section:CrossSection,[x,y]:Vec2):Vec2|undefined{
+  let inside=false,best:Vec2|undefined,minDistance=Infinity;
+  for(const contour of section.toPolygons())for(let i=0;i<contour.length;i++){
+    const [ax,ay]=contour[i],[bx,by]=contour[(i+1)%contour.length];
+    if((ay>y)!==(by>y)&&x<ax+(y-ay)*(bx-ax)/(by-ay))inside=!inside;
+    const dx=bx-ax,dy=by-ay,length=dx*dx+dy*dy;
+    if(!length)continue;
+    const u=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/length));
+    const point:Vec2=[ax+dx*u,ay+dy*u];
+    const distance=(x-point[0])**2+(y-point[1])**2;
+    if(distance<minDistance){minDistance=distance;best=point;}
+  }
+  return inside?[x,y]:best;
 }
 export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Settings,elevation?:Elevation,label?:Captions|TextShape,route:Point[][]=[]):Result {
   const p={...modelDefaults,...settings};
@@ -39,8 +53,8 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
 
     const project=(a:Point):Vec2=>[(a.lon-area.lon)*lonMetres(area.lat)*scale,(a.lat-area.lat)*LAT_METRES*scale];
     const mapPins:Vec2[]=[];
-    for(const pin of [...(p.marker?[pins(p.markerPosition)[0]??area]:[]),...pins(p.extraPins)]){
-      const point=project(pin);
+    const primaryPin=p.marker?project(pins(p.markerPosition)[0]??area):undefined;
+    for(const point of [...(primaryPin?[primaryPin]:[]),...pins(p.extraPins).map(project)]){
       const footprint=t(t(C.circle(MARKER_SOCKET_RADIUS+.4,24)).translate(point));
       if(t(footprint.subtract(frame)).area()<.001&&
         !mapPins.some(([x,y])=>Math.hypot(point[0]-x,point[1]-y)<3.2))mapPins.push(point);
@@ -287,13 +301,28 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
     const debris=detached.length?t(M.Manifold.union(detached)):undefined;
     const sockets:Manifold[]=[],markerPositions:Array<[number,number,number]>=[];
     const modelTop=model.boundingBox().max[2]+1;
-    for(const [x,y] of mapPins){
-      const hit=model.rayCast([x,y,modelTop],[x,y,-1])[0];
-      if(!hit)continue;
-      const z=hit.position[2],bottom=Math.max(.18,z-MARKER_SOCKET_DEPTH);
-      if(z-bottom<MARKER_PEG_LENGTH)continue;
-      sockets.push(extrude(t(t(C.circle(MARKER_SOCKET_RADIUS,48)).translate([x,y])),modelTop-bottom,bottom));
-      markerPositions.push([x,y,z]);
+    let primaryMarker:Point|undefined;
+    let markerAdjusted=0,markerSkipped=0;
+    if(mapPins.length){
+      const markerClearance=5.8;
+      const obstacles=t(C.union([cover,water,...bridgeWays]));
+      const available=t(t(frame.offset(-MARKER_SOCKET_RADIUS-.4,'Round')).subtract(
+        t(obstacles.offset(markerClearance,'Round',2,24))));
+      for(const requested of mapPins){
+        const used=t(C.union(markerPositions.map(([x,y])=>t(t(C.circle(10,32)).translate([x,y])))));
+        const free=t(available.subtract(used));
+        const point=nearestGround(free,requested);
+        if(!point){markerSkipped++;continue;}
+        const [x,y]=point;
+        const hit=model.rayCast([x,y,modelTop],[x,y,-1])[0];
+        if(!hit){markerSkipped++;continue;}
+        const z=hit.position[2],bottom=Math.max(.18,z-MARKER_SOCKET_DEPTH);
+        if(z-bottom<MARKER_PEG_LENGTH){markerSkipped++;continue;}
+        if(Math.hypot(x-requested[0],y-requested[1])>.01)markerAdjusted++;
+        sockets.push(extrude(t(t(C.circle(MARKER_SOCKET_RADIUS,48)).translate([x,y])),modelTop-bottom,bottom));
+        markerPositions.push([x,y,z]);
+        if(requested===primaryPin)primaryMarker={lat:area.lat+y/(LAT_METRES*scale),lon:area.lon+x/(lonMetres(area.lat)*scale)};
+      }
     }
     const socketCuts=sockets.length?t(M.Manifold.union(sockets)):undefined;
     if(socketCuts)model=t(model.subtract(socketCuts));
@@ -369,7 +398,7 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
       });
     }
     const trayBox=trayBody?.boundingBox()??box;
-    return {parts,solid:part('map','Mappa urbana',p.groundColor,model),markers,placedMarkers,tray,trayPreview,trayFloor:tray?trayFloor:0,stand,mount,changes,
+    return {parts,solid:part('map','Mappa urbana',p.groundColor,model),markers,placedMarkers,primaryMarker,markerAdjusted,markerSkipped,tray,trayPreview,trayFloor:tray?trayFloor:0,stand,mount,changes,
       width:Math.max(box.max[0],trayBox.max[0])-Math.min(box.min[0],trayBox.min[0]),
       depth:Math.max(box.max[1],trayBox.max[1])-Math.min(box.min[1],trayBox.min[1]),counts};
   } finally {scope.free();}
