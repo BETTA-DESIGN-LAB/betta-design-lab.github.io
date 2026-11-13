@@ -89,6 +89,7 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
       const b=shape.bounds();
       return shape.area()>=.3&&Math.min(b.max[0]-b.min[0],b.max[1]-b.min[1])>=.55;
     };
+    const protectedBuildings:CrossSection[]=[];
     const buildingParts=new Map<Element,CrossSection>();
     for(const e of data)if(p.buildings&&!p.simple&&e.tags?.['building:part']&&e.tags['building:part']!=='no'&&(e.type!=='way'||!members.has(e.id))){
       const section=polygon(e);
@@ -133,6 +134,10 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
         const roof=Math.min(height-lift-.25,roofMetres*scale*p.relief);
         counts[h.kind]++;
         footprints.push(shape);
+        if(mapPins.length&&(total>=20||/^(church|cathedral|chapel|tower|bell_tower)$/.test(tags.building??'')||
+          tags.amenity==='place_of_worship'||tags.man_made==='tower'||tags.historic==='monument'||pisaBaptistery(e))){
+          protectedBuildings.push(mapped);
+        }
         let solid:Manifold;
         if(!p.simple&&pisaBaptistery(e)){
           const full=polygon(e,false).bounds();
@@ -304,22 +309,25 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
     let primaryMarker:Point|undefined;
     let markerAdjusted=0,markerSkipped=0;
     if(mapPins.length){
-      const markerClearance=5.8;
-      const obstacles=t(C.union([cover,water,...bridgeWays]));
+      const markerClearance=6.5;
+      const obstacles=t(C.union([...protectedBuildings,water,...bridgeWays]));
       const available=t(t(frame.offset(-MARKER_SOCKET_RADIUS-.4,'Round')).subtract(
         t(obstacles.offset(markerClearance,'Round',2,24))));
+      const clearance=t(C.circle(markerClearance,48));
       for(const requested of mapPins){
         const used=t(C.union(markerPositions.map(([x,y])=>t(t(C.circle(10,32)).translate([x,y])))));
         const free=t(available.subtract(used));
         const point=nearestGround(free,requested);
         if(!point){markerSkipped++;continue;}
         const [x,y]=point;
-        const hit=model.rayCast([x,y,modelTop],[x,y,-1])[0];
+        const hit=ground.rayCast([x,y,modelTop],[x,y,-1])[0];
         if(!hit){markerSkipped++;continue;}
         const z=hit.position[2],bottom=Math.max(.18,z-MARKER_SOCKET_DEPTH);
         if(z-bottom<MARKER_PEG_LENGTH){markerSkipped++;continue;}
         if(Math.hypot(x-requested[0],y-requested[1])>.01)markerAdjusted++;
-        sockets.push(extrude(t(t(C.circle(MARKER_SOCKET_RADIUS,48)).translate([x,y])),modelTop-bottom,bottom));
+        const recess=extrude(t(clearance.translate([x,y])),modelTop-z,z);
+        const hole=extrude(t(t(C.circle(MARKER_SOCKET_RADIUS,48)).translate([x,y])),modelTop-bottom,bottom);
+        sockets.push(t(recess.add(hole)));
         markerPositions.push([x,y,z]);
         if(requested===primaryPin)primaryMarker={lat:area.lat+y/(LAT_METRES*scale),lon:area.lon+x/(lonMetres(area.lat)*scale)};
       }
