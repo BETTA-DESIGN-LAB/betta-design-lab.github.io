@@ -38,6 +38,7 @@ const PHOTO_ALT:Record<string,string>={
  stamp:'Esempio illustrativo di timbro con manico arancione e piastra con foglia',
  'desk-organizer':'Esempio illustrativo di organizer con scomparti indipendenti',
  thermoform:'Esempio illustrativo di kit per termoformatura a forma di fantasma',
+ 'city-map':'Render del plastico 3D di Firenze con il Duomo in rilievo',
  'image-svg':'Esempio illustrativo di disegno di foglie e decorazione stampata'
 };
 const product=(id:string,eager=false)=>'<img src="./home-products/'+id+'.webp" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
