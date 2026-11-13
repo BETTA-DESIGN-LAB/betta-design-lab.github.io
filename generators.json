@@ -98,6 +98,13 @@
       "status": "beta",
       "category": "Creatività",
       "blurb": "Timbri con testo, SVG e icone, piastre intercambiabili e quattro manici avvitabili."
+    },
+    {
+      "id": "city-map",
+      "name": "Mappe 3D",
+      "status": "beta",
+      "category": "Creatività",
+      "blurb": "Trasforma un quartiere in un plastico stampabile con edifici, strade, acqua e parchi."
     }
   ]
 }

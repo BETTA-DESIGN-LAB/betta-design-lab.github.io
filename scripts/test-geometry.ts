@@ -1,3 +1,5 @@
+import './test-city-map.ts';
+
 import './test-keychain-support.ts';
 import './test-vase-design.ts';
 import './test-keychain-letter-detail.ts';

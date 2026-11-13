@@ -308,3 +308,25 @@ a:not(.bdl-btn):not(.bdl-logo):not(.hub-card) { color: color-mix(in srgb,var(--b
 
 .bdl-slider-number{width:92px;min-width:0;text-align:right;padding:6px 8px;border:1px solid var(--bdl-border);border-radius:8px;background:var(--bdl-surface);color:inherit;font:inherit;font-variant-numeric:tabular-nums}.bdl-slider-number:focus-visible{outline:2px solid var(--bdl-accent)}
 .bdl-vase-presets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.bdl-vase-presets button{display:block;text-align:left;min-height:72px;white-space:normal}.bdl-vase-presets button[aria-pressed='true']{border-color:var(--bdl-accent);background:var(--bdl-accent-soft)}.bdl-vase-presets small{display:block;font-weight:400;opacity:.65;line-height:1.35;margin-top:4px}.bdl-vase-controls select{width:100%}
+
+/* Selezione cartografica */
+.bdl-city-map { position:relative; margin-bottom:.65rem; }
+.bdl-city-picker { position:relative; overflow:hidden; height:230px; border-radius:14px; background:#e9e5de; cursor:grab; touch-action:none; }
+.bdl-city-picker:active { cursor:grabbing; }
+.bdl-city-tiles { position:absolute; inset:0; pointer-events:none; }
+.bdl-city-tiles img { position:absolute; width:256px; height:256px; max-width:none; }
+.bdl-city-extent { position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); pointer-events:none; overflow:visible; }
+.bdl-city-extent polygon { fill:#ff4b1615; stroke:#ff4b16; stroke-width:2px; }
+.bdl-city-marker { position:absolute; width:15px; height:15px; transform:translate(-50%,-50%); pointer-events:none; border:2px solid white; border-radius:50%; background:#ff4b16; box-shadow:0 1px 4px #0007; }
+.bdl-city-picker.is-placing { cursor:crosshair; }
+
+.bdl-city-attribution { position:absolute; bottom:5px; right:5px; background:#fff; color:#222; font-size:10px; padding:2px 5px; border-radius:4px; }
+.bdl-city-coordinates { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.bdl-city-coordinates input { width:100%; box-sizing:border-box; }
+
+.bdl-city-dimensions{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:hidden}
+.bdl-city-dimensions path{stroke:#d64017;stroke-width:1.4;fill:none}
+.bdl-city-dimensions text{fill:#371508;stroke:#fff;stroke-width:6px;stroke-linejoin:round;paint-order:stroke fill;font:600 13px Manrope,system-ui,sans-serif}
+.bdl-city-presets{display:flex;gap:5px;flex-wrap:wrap}
+
+.bdl-city-stage .bdl-stage-tools,.bdl-city-stage .bdl-stage-bottom{z-index:3}

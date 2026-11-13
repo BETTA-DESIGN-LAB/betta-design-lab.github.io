@@ -216,16 +216,17 @@ export function toggle(o: { label: string; value: boolean; hint?: string; onChan
   return { root, set(v) { input.checked = v; } };
 }
 
-export function colorPicker(o: { label: string; value: string; onChange: (hex: string) => void }): { root: HTMLElement; set(v: string): void } {
+export function colorPicker(o: { label: string; value: string; onChange: (hex: string) => void; palette?: readonly {name:string;hex:string}[] }): { root: HTMLElement; set(v: string): void } {
   const name = el('span', { class: 'bdl-row-value' });
-  const sw = FILAMENTS.map((f) => {
+  const palette=o.palette??FILAMENTS;
+  const sw = palette.map((f) => {
     const b = el('button', { type: 'button', class: 'bdl-swatch', title: f.name, 'aria-label': f.name, style: `background:${f.hex}` });
     b.addEventListener('click', () => { set(f.hex); o.onChange(f.hex); });
     return b;
   });
   const set = (hex: string) => {
-    sw.forEach((b, i) => b.setAttribute('aria-pressed', String(FILAMENTS[i].hex === hex)));
-    name.textContent = FILAMENTS.find((f) => f.hex === hex)?.name ?? hex;
+    sw.forEach((b, i) => b.setAttribute('aria-pressed', String(palette[i].hex === hex)));
+    name.textContent = palette.find((f) => f.hex === hex)?.name ?? hex;
   };
   set(o.value);
   return {

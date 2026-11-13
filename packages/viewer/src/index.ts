@@ -14,6 +14,8 @@ export interface ViewerOptions {
   fitPlate?: () => boolean;
   /** Movimento morbido tra viste, attivato soltanto dal generatore che lo richiede. */
   smoothView?: boolean;
+  fitPadding?: number;
+  onProject?: (project:(point:readonly [number,number,number])=>{x:number;y:number;visible:boolean})=>void;
   dragGroup?: (id:string) => string;
   onDragState?: (active:boolean) => void;
   canMovePart?: (id: string) => boolean;
@@ -182,12 +184,18 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
   ro.observe(host);
   resize();
 
+  const projected=new THREE.Vector3();
+  const project=(point:readonly [number,number,number])=>{
+    projected.set(...point).project(camera);
+    return {x:(projected.x+1)*host.clientWidth/2,y:(1-projected.y)*host.clientHeight/2,visible:Math.abs(projected.z)<=1};
+  };
   let raf = 0;
   const loop = () => {
     raf = requestAnimationFrame(loop);
     if(transition){const progress=Math.min(1,(performance.now()-transition.start)/260),ease=1-(1-progress)**3;camera.position.lerpVectors(transition.from,transition.to,ease);controls.target.lerpVectors(transition.targetFrom,transition.targetTo,ease);if(progress===1)transition=null;}
     controls.update();
     renderer.render(scene, camera);
+    opts.onProject?.(project);
   };
   loop();
 
@@ -205,7 +213,7 @@ export function createViewer(host: HTMLElement, opts: ViewerOptions = {}): Viewe
     // Usa il lato più stretto del canvas, così il modello entra anche su schermi verticali.
     const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
     const hHalf = Math.atan(Math.tan(vHalf) * camera.aspect);
-    const dist = (r / Math.sin(Math.min(vHalf, hHalf))) * 1.0;
+    const dist = (r / Math.sin(Math.min(vHalf, hHalf))) * (opts.fitPadding??1);
     const destination=c.clone().addScaledVector(dir.normalize(),dist);
     if(opts.smoothView&&!first&&!window.matchMedia('(prefers-reduced-motion: reduce)').matches)transition={from:camera.position.clone(),to:destination,targetFrom:controls.target.clone(),targetTo:c,start:performance.now()};
     else{transition=null;controls.target.copy(c);camera.position.copy(destination);}
