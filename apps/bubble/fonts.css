@@ -1,0 +1,44 @@
+@font-face {
+  font-family: 'Baloo 2';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(/bubble-fonts/baloo2.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Fredoka';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/bubble-fonts/fredoka.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Lilita One';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/bubble-fonts/lilitaone.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Modak';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/bubble-fonts/modak.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'Coiny';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(/bubble-fonts/coiny.ttf) format('truetype');
+}
+@font-face {
+  font-family: 'DynaPuff';
+  font-style: normal;
+  font-weight: 700;
+  font-stretch: normal;
+  font-display: swap;
+  src: url(/bubble-fonts/dynapuff.ttf) format('truetype');
+}
