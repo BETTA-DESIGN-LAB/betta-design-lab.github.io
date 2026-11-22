@@ -9,6 +9,7 @@ interface Entry { id: string; name: string; status: 'live' | 'beta' | 'planned';
 // Icone editoriali piatte: oggetti riconoscibili, senza viste tecniche o quote.
 const a = (d: string) => `<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const ART: Record<string, string> = {
+  bubble: a('<path d="M18 48V16h13c13 0 15 14 4 16 13 2 11 16-2 16z"/><path d="M25 23h6M25 40h7"/>'),
   "image-svg": a('<rect x="9" y="9" width="46" height="46" rx="10"/><circle cx="24" cy="24" r="5"/><path d="M13 46l13-13 9 9 9-17 8 21"/>'),
   christmas: a('<circle cx="32" cy="37" r="20"/><rect x="25" y="12" width="14" height="7" rx="2"/><path d="M28 12V8a4 4 0 0 1 8 0v4M32 26v22M23 31l18 12M23 43l18-12"/>'),
   coaster: a('<circle cx="32" cy="32" r="23"/><circle cx="32" cy="32" r="16"/><path d="M25 33c0-9 14-9 14 0M28 40h8"/>'),
@@ -41,9 +42,9 @@ const PHOTO_ALT:Record<string,string>={
  'city-map':'Render del plastico 3D di Firenze con il Duomo in rilievo',
  'image-svg':'Esempio illustrativo di disegno di foglie e decorazione stampata'
 };
-const product=(id:string,eager=false)=>'<img src="./home-products/'+id+'.webp" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
+const product=(id:string,eager=false)=>!PHOTO_ALT[id]?(ART[id]??ART.stamp):'<img src="./home-products/'+id+'.webp" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
 initTheme();
-const order=['keychain','box','lamp','coaster','christmas','vase','keycap','stamp','desk-organizer','thermoform','image-svg'];
+const order=['bubble','keychain','box','lamp','coaster','christmas','vase','keycap','stamp','desk-organizer','thermoform','image-svg'];
 const entries=(registry.generators as Entry[]).filter(g=>g.status!=='planned').sort((x,y)=>order.indexOf(x.id)-order.indexOf(y.id));
 const planned=(registry.generators as Entry[]).filter(g=>g.status==='planned');
 const filters=el('div',{class:'hub-filters','aria-label':'Filtra i generatori'});
