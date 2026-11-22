@@ -2,6 +2,13 @@
   "$comment": "Registro unico di tutti i generatori. L'hub genera le card da qui e la build crea una pagina per ogni voce con status 'live' o 'beta'. id = cartella in apps/.",
   "generators": [
     {
+      "id": "bubble",
+      "name": "Bubble Letter",
+      "status": "beta",
+      "category": "Creatività",
+      "blurb": "Lettere soffici con texture stampabili, colori e supporti personalizzati."
+    },
+    {
       "id": "image-svg",
       "name": "Immagine → SVG",
       "status": "live",
