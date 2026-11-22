@@ -29,6 +29,7 @@ const ART: Record<string, string> = {
 
 // Immagini illustrative generate: non fotografie di stampe collaudate.
 const PHOTO_ALT:Record<string,string>={
+ bubble:'Anteprima illustrativa di lettere Bubble JOY arancioni, azzurre e gialle con texture a maglia',
  keychain:'Esempio illustrativo di portachiavi Betta arancione e bianco con anello metallico',
  lamp:'Esempio illustrativo di lampada avorio a spirale con base scura',
  box:'Esempio illustrativo di scatola scura con cassetto arancione',
@@ -42,7 +43,7 @@ const PHOTO_ALT:Record<string,string>={
  'city-map':'Render del plastico 3D di Firenze con il Duomo in rilievo',
  'image-svg':'Esempio illustrativo di disegno di foglie e decorazione stampata'
 };
-const product=(id:string,eager=false)=>!PHOTO_ALT[id]?(ART[id]??ART.stamp):'<img src="./home-products/'+id+'.webp" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
+const product=(id:string,eager=false)=>!PHOTO_ALT[id]?(ART[id]??ART.stamp):'<img src="./home-products/'+id+(id==='bubble'?'.png':'.webp')+'" alt="'+PHOTO_ALT[id]+'" width="800" height="800" loading="'+(eager?'eager':'lazy')+'" decoding="async">';
 initTheme();
 const order=['bubble','keychain','box','lamp','coaster','christmas','vase','keycap','stamp','desk-organizer','thermoform','image-svg'];
 const entries=(registry.generators as Entry[]).filter(g=>g.status!=='planned').sort((x,y)=>order.indexOf(x.id)-order.indexOf(y.id));
