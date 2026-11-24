@@ -5,6 +5,8 @@ import type {Elevation} from './elevation.ts';
 import {outline,type Form} from './forms.ts';
 import {DEFAULT_MAGNET,MARKER_PEG_LENGTH,MARKER_SOCKET_RADIUS,MARKER_SOCKET_DEPTH,markerMesh,pins,rearMount} from './accessories.ts';
 import {pisaBaptistery,baptisteryMesh} from './landmarks.ts';
+import {pisaCathedral,cathedralMesh,PISA_CATHEDRAL_HEIGHT} from './cathedral.ts';
+import {PITCHED_ROOFS,pitchedRoof} from './roofs.ts';
 import {makeCaption,type Captions,type TextShape} from './caption.ts';
 export const modelDefaults={
   trayThickness:2.4,
@@ -90,14 +92,18 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
       return shape.area()>=.3&&Math.min(b.max[0]-b.min[0],b.max[1]-b.min[1])>=.55;
     };
     const protectedBuildings:CrossSection[]=[];
+    const cathedralAreas=!p.simple?data.filter(pisaCathedral).map(e=>polygon(e)):[];
+    const cathedralArea=t(C.union(cathedralAreas));
     const buildingParts=new Map<Element,CrossSection>();
     for(const e of data)if(p.buildings&&!p.simple&&e.tags?.['building:part']&&e.tags['building:part']!=='no'&&(e.type!=='way'||!members.has(e.id))){
       const section=polygon(e);
+      if(!pisaCathedral(e)&&!cathedralArea.isEmpty()&&t(section.subtract(cathedralArea)).area()<.001)continue;
       if(usable(section))buildingParts.set(e,section);
     }
     const detailedArea=t(C.union([...buildingParts.values()]));
     const extrude=(shape:CrossSection,height:number,z:number)=>t(t(shape.extrude(height)).translate([0,0,z]));
-    const roofed=(shape:CrossSection,height:number,roofHeight:number,profile:string)=>{
+    const roofed=(shape:CrossSection,height:number,roofHeight:number,profile:string,tags:Record<string,string>)=>{
+      if(PITCHED_ROOFS.has(profile))return pitchedRoof(M,scope,shape,tags,height,roofHeight,p.base);
       const body=extrude(shape,height-roofHeight,p.base);
       const b=shape.bounds(),x=(b.min[0]+b.max[0])/2,y=(b.min[1]+b.max[1])/2;
       const centred=t(shape.translate([-x,-y]));
@@ -117,19 +123,21 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
       if(p.buildings&&(part||(tags.building&&tags.building!=='no'&&(e.type!=='way'||!members.has(e.id))))) {
         const mapped=part??polygon(e);
         if(mapped.isEmpty())continue;
+        if(!p.simple&&!pisaCathedral(e)&&!cathedralArea.isEmpty()&&t(mapped.subtract(cathedralArea)).area()<.001)continue;
         const detailed=part?mapped:t(mapped.subtract(detailedArea));
         const shape=p.simple&&!detailed.isEmpty()?t(t(C.hull([detailed])).intersect(frame)):detailed;
         if(shape.isEmpty())continue;
         if(!usable(shape)){counts.omitted++;continue;}
         const h=buildingHeight(tags,p.fallback),start=metres(tags.min_height);
-        const total=h.kind!=='height'&&h.metres<=start?start+h.metres:h.metres;
+        const total=pisaCathedral(e)&&h.kind==='estimate'?PISA_CATHEDRAL_HEIGHT:
+          h.kind!=='height'&&h.metres<=start?start+h.metres:h.metres;
         const b=shape.bounds();
         const lift=surface.at((b.min[0]+b.max[0])/2,(b.min[1]+b.max[1])/2);
         const emphasise=p.highlight&&!t(shape.intersect(centre)).isEmpty();
         const height=Math.max(.45,total*scale*p.relief*(emphasise?1.2:1))+lift;
         const profile=tags['roof:shape'];
         const roofLevels=Number(tags['roof:levels']);
-        const knownRoof=profile==='dome'||profile==='pyramidal'||profile==='cone'||profile==='conical';
+        const knownRoof=PITCHED_ROOFS.has(profile)||profile==='dome'||profile==='pyramidal'||profile==='cone'||profile==='conical';
         const roofMetres=metres(tags['roof:height'])||(roofLevels>0?roofLevels*3:knownRoof?total*.28:0);
         const roof=Math.min(height-lift-.25,roofMetres*scale*p.relief);
         counts[h.kind]++;
@@ -139,13 +147,16 @@ export function build(M:ManifoldToplevel,area:Area,data:Element[],settings:Setti
           protectedBuildings.push(mapped);
         }
         let solid:Manifold;
-        if(!p.simple&&pisaBaptistery(e)){
+        if(!p.simple&&pisaCathedral(e)){
+          const monument=cathedralMesh(M,scope,polygon(e,false),p.base+lift,height-lift);
+          solid=t(monument.intersect(extrude(frame,height+.02,p.base)));
+        }else if(!p.simple&&pisaBaptistery(e)){
           const full=polygon(e,false).bounds();
           const center:Vec2=[(full.min[0]+full.max[0])/2,(full.min[1]+full.max[1])/2];
           const monument=baptisteryMesh(M,scope,center,p.base,scale,height);
           const clipped=t(monument.intersect(extrude(frame,height+.01,p.base)));
           solid=t(clipped.add(extrude(shape,Math.min(height,2.4*scale+lift),p.base)));
-        }else solid=!p.simple&&roof>=.3&&knownRoof?roofed(shape,height,roof,profile):extrude(shape,height,p.base);
+        }else solid=!p.simple&&roof>=.3&&knownRoof?roofed(shape,height,roof,profile,tags):extrude(shape,height,p.base);
         (emphasise?featured:buildings).push(solid);
       } else if((p.roads||p.paths||p.bridges)&&tags.highway&&tags.tunnel!=='yes'&&tags.highway!=='proposed'&&tags.highway!=='construction') {
         const footway=/^(footway|path|steps|cycleway|pedestrian|bridleway)$/.test(tags.highway);
