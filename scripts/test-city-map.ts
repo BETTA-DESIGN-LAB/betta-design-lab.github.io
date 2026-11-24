@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './test-pisa-cathedral.ts';
 import {readFileSync} from 'node:fs';
 import {bounds,loadManifold,Scope} from '@bdl/geometry';
 import {to3MF,toSTL} from '@bdl/export';
